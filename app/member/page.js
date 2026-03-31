@@ -36,7 +36,7 @@ export default function StudentDashboard() {
       {/* Profile Header */}
       <div className="glass-panel" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Hi, <span className="text-gradient">{profile.name}</span></h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Hi, <span className="text-gradient">{profile.nickname || profile.fullName || 'Student'}</span></h2>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Student Account</div>
         </div>
         
