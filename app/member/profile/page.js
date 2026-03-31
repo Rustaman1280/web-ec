@@ -18,9 +18,38 @@ export default function ProfilePage() {
   
   const fileInputRef = useRef(null);
 
+  const [showPassModal, setShowPassModal] = useState(false);
+  const [passData, setPassData] = useState({ current: '', new: '', confirm: '' });
+  const [passLoading, setPassLoading] = useState(false);
+
   if (loading || !profile) {
     return <div style={{ textAlign: 'center', marginTop: '30vh' }}>Loading...</div>;
   }
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (passData.new !== passData.confirm) {
+      alert("New passwords do not match!");
+      return;
+    }
+    if (passData.new.length < 6) {
+      alert("New password must be at least 6 characters.");
+      return;
+    }
+
+    setPassLoading(true);
+    try {
+      const { changeUserPassword } = await import('@/lib/authUtils');
+      await changeUserPassword(passData.current, passData.new);
+      alert("Password changed successfully!");
+      setShowPassModal(false);
+      setPassData({ current: '', new: '', confirm: '' });
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to change password. Make sure your current password is correct.");
+    }
+    setPassLoading(false);
+  };
 
   const handleLogout = async () => {
     await logoutUser();
@@ -37,7 +66,7 @@ export default function ProfilePage() {
     } else {
       alert("Not enough Points! This costs 50 Pts.");
     }
-    setNickLoading(true);
+    setNickLoading(false);
   };
 
   const exchangeExp = async (pts) => {
@@ -218,6 +247,70 @@ export default function ProfilePage() {
             </button>
           </li>
         </ul>
+      </div>
+
+      {/* Security Section */}
+      <div className="glass-panel">
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+             <i className="ti ti-shield-lock" style={{ color: 'var(--accent)' }}></i> Account Security
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Mange your login credentials.</p>
+        </div>
+        
+        <div style={{ padding: '1.5rem' }}>
+          {!showPassModal ? (
+            <button 
+              onClick={() => setShowPassModal(true)}
+              style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--bg-dark)', border: '1px solid var(--border-light)', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Change My Password
+            </button>
+          ) : (
+            <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '5px' }}>Current Password</label>
+                <input 
+                  type="password" 
+                  value={passData.current} 
+                  onChange={e => setPassData({...passData, current: e.target.value})} 
+                  required 
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }} 
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '5px' }}>New Password</label>
+                  <input 
+                    type="password" 
+                    value={passData.new} 
+                    onChange={e => setPassData({...passData, new: e.target.value})} 
+                    required 
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }} 
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '5px' }}>Confirm New</label>
+                  <input 
+                    type="password" 
+                    value={passData.confirm} 
+                    onChange={e => setPassData({...passData, confirm: e.target.value})} 
+                    required 
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }} 
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                <button type="submit" disabled={passLoading} style={{ flex: 2, padding: '10px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: passLoading ? 'wait' : 'pointer' }}>
+                  {passLoading ? 'Updating...' : 'Update Password'}
+                </button>
+                <button type="button" onClick={() => setShowPassModal(false)} style={{ flex: 1, padding: '10px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
 
       <button onClick={handleLogout} style={{ 
