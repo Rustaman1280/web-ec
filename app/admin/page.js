@@ -2,23 +2,30 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createQuizSession } from '@/lib/firebaseUtils';
-import { useAuth } from '@/hooks/useAuth';
-import { logoutUser } from '@/lib/authUtils';
+import { database } from '@/lib/firebase';
+import { ref, get } from 'firebase/database';
+import { getAllTasks } from '@/lib/economyUtils';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { currentUser, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [stats, setStats] = useState({ students: 0, tasks: 0 });
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!currentUser || profile?.role !== 'admin') {
-         // Redirect non-admins or unauthenticated
-         router.push('/auth/login');
-      }
-    }
-  }, [currentUser, profile, authLoading, router]);
+     const fetchStats = async () => {
+        if(!database) return;
+        const usersSnap = await get(ref(database, 'users'));
+        let studentCount = 0;
+        if(usersSnap.exists()) {
+           const uData = usersSnap.val();
+           studentCount = Object.values(uData).filter(u => u.role !== 'admin').length;
+        }
+        const tasksData = await getAllTasks();
+        setStats({ students: studentCount, tasks: tasksData.length });
+     };
+     fetchStats();
+  }, []);
 
   // Mock questions for demo purposes
   const DEMO_QUESTIONS = [
@@ -45,8 +52,6 @@ export default function AdminDashboard() {
     }
   ];
 
-  if(authLoading || !profile) return <div style={{textAlign: 'center', marginTop: '30vh'}}>Authenticating...</div>;
-
   const handleCreateSession = async () => {
     setLoading(true);
     setError(null);
@@ -55,88 +60,45 @@ export default function AdminDashboard() {
       if(pin) {
         router.push(`/admin/quiz/${pin}`);
       } else {
-        setError('Failed to create session. Check Firebase config.');
+        setError('Failed to create session.');
       }
     } catch (err) {
       console.error(err);
-      setError('An error occurred. Make sure Firebase is initialized correctly.');
+      setError('An error occurred.');
     }
     setLoading(false);
   };
-  
-  const handleLogout = async () => {
-    await logoutUser();
-    router.push('/');
-  }
 
   return (
-    <div className="container">
-      <div className="glass-panel" style={{ padding: '3rem', marginTop: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-           <h2 className="heading-xl" style={{ fontSize: '2.5rem', margin: 0 }}>Welcome, Admin</h2>
-           <button onClick={handleLogout} style={{ background: 'transparent', color: '#ef4444', border: '1px solid currentColor', padding: '0.5rem 1rem', borderRadius: '8px' }}>Log Out</button>
-        </div>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+    <div style={{ padding: '1rem' }}>
+       <h2 className="heading-xl" style={{ fontSize: '2.5rem', marginBottom: '1.5rem', marginTop: '0.5rem' }}>Overview</h2>
+       
+       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
+          <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--primary)', background: '#fff' }}>
+             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Enrolled Students</div>
+             <div style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--text-main)', marginTop: '0.5rem' }}>{stats.students}</div>
+          </div>
+          <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--accent)', background: '#fff' }}>
+             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>Dynamic Tasks Created</div>
+             <div style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--text-main)', marginTop: '0.5rem' }}>{stats.tasks}</div>
+          </div>
+          <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981', background: '#fff' }}>
+             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>Active Live Sessions</div>
+             <div style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--text-main)', marginTop: '0.5rem' }}>0</div>
+          </div>
+       </div>
+
+       <div className="glass-panel" style={{ padding: '2.5rem', background: 'var(--gradient-bg)' }}>
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: 'bold' }}>Quick Actions</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', maxWidth: '600px' }}>Start a live real-time quiz session on your projector instantly. Students can join using the generated Game PIN from their profile hub.</p>
           
-          <div style={{ 
-            background: 'var(--gradient-primary)', 
-            padding: '2rem', 
-            borderRadius: '16px',
-            border: 'none',
-            color: 'white'
-          }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Host a Live Quiz</h3>
-            <p style={{ opacity: 0.9, marginBottom: '2rem' }}>
-              Start a new real-time game. Players can join using the generated Game PIN.
-            </p>
-            {error && <div style={{ color: '#fca5a5', marginBottom: '1rem' }}>{error}</div>}
-            <button 
-              className="btn-primary" 
-              onClick={handleCreateSession}
-              disabled={loading}
-              style={{ width: '100%', background: 'white', color: 'var(--primary)' }}
-            >
-              {loading ? 'Generating PIN...' : 'Start Demo Quiz'}
-            </button>
-          </div>
-
-          <div style={{ 
-            background: 'rgba(255,255,255,0.05)', 
-            padding: '2rem', 
-            borderRadius: '16px',
-            border: '1px solid var(--border-light)'
-          }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Student Management</h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              View student profiles, see all registered members, and track cumulative scores.
-            </p>
-            <button className="btn-primary" style={{ width: '100%', background: 'transparent', border: '1px solid var(--text-muted)' }}>
-              Manage Students
-            </button>
-          </div>
-
-          <div style={{ 
-            background: 'var(--gradient-bg)', 
-            padding: '2rem', 
-            borderRadius: '16px',
-            border: '1px solid var(--border-light)'
-          }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Task Manager</h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              Create dynamic assignments. Students can claim rewards by completing them.
-            </p>
-            <button 
-              className="btn-primary" 
-              onClick={() => router.push('/admin/tasks')}
-              style={{ width: '100%', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}
-            >
-              Manage Tasks
-            </button>
-          </div>
-
-        </div>
-      </div>
+          {error && <div style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
+          
+          <button onClick={handleCreateSession} disabled={loading} className="btn-primary" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center' }}>
+            <i className="ti ti-device-tv" style={{ marginRight: '10px', fontSize: '1.4rem' }}></i> 
+            {loading ? 'Generating PIN...' : 'Host Live Quiz Display'}
+          </button>
+       </div>
     </div>
   );
 }

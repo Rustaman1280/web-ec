@@ -49,13 +49,8 @@ export default function AdminTasksManager() {
   if(authLoading || !profile) return <div style={{textAlign: 'center', marginTop: '30vh'}}>Authenticating...</div>;
 
   return (
-    <div className="container" style={{ padding: '2rem 1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-        <button onClick={() => router.push('/admin')} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '1.2rem', padding: '0.5rem', cursor: 'pointer' }}>
-          ← Back
-        </button>
-      </div>
-
+    <div className="container" style={{ padding: '0.5rem 1.5rem', paddingLeft: '0' }}>
+      <h2 className="heading-xl" style={{ fontSize: '2.5rem', marginBottom: '1.5rem', marginTop: '0.5rem' }}>Task Manager</h2>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
         {/* Create Task Form */}
         <div className="glass-panel" style={{ padding: '2rem', height: 'fit-content' }}>
