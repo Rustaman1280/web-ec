@@ -1,19 +1,68 @@
 ﻿
-D:\Rustaman\ekskul\EC\englishclubweb\app\auth\login\page.js
-  66:14  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+D:\Rustaman\ekskul\EC\englishclubweb\app\admin\tasks\page.js
+  33:10  error  Error: Calling setState synchronously within an effect can trigger cascading renders
 
-D:\Rustaman\ekskul\EC\englishclubweb\app\member\quiz\[id]\page.js
-  89:25  error  Error: Cannot call impure function during render
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
 
-`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
 
-  87 |     
-  88 |     setHasAnswered(true);
-> 89 |     const timeTakenMs = Date.now() - questionStartTime;
-     |                         ^^^^^^^^^^ Cannot call impure function
-  90 |     const isCorrect = session.questions[session.currentQuestionIndex].correctIndex === index;
-  91 |     
-  92 |     await submitAnswer(pin, profile.id, index, timeTakenMs, isCorrect);  react-hooks/purity
+  31 |          router.push('/auth/login');
+  32 |       } else {
+> 33 |          fetchTasks();
+     |          ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  34 |       }
+  35 |     }
+  36 |   }, [currentUser, profile, authLoading, router]);  react-hooks/set-state-in-effect
 
-Γ£û 2 problems (2 errors, 0 warnings)
+D:\Rustaman\ekskul\EC\englishclubweb\app\member\leaderboard\page.js
+  14:7  error    Error: Cannot access variable before it is declared
+
+`fetchLeaderboard` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  12 |   useEffect(() => {
+  13 |     if(!authLoading && profile) {
+> 14 |       fetchLeaderboard();
+     |       ^^^^^^^^^^^^^^^^ `fetchLeaderboard` accessed before it is declared
+  15 |     }
+  16 |   }, [authLoading, profile]);
+  17 |
+
+  16 |   }, [authLoading, profile]);
+  17 |
+> 18 |   const fetchLeaderboard = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |     setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 20 |     if (!database) { setLoading(false); return; }
+     ΓÇª
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 39 |     setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 40 |   };
+     | ^^^^^ `fetchLeaderboard` is declared here
+  41 |
+  42 |   if (authLoading || !profile) {
+  43 |     return <div style={{ textAlign: 'center', marginTop: '30vh' }}>Loading...</div>;  react-hooks/immutability
+  16:6  warning  React Hook useEffect has a missing dependency: 'fetchLeaderboard'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+
+D:\Rustaman\ekskul\EC\englishclubweb\app\member\tasks\page.js
+  25:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  23 |   useEffect(() => {
+  24 |     if (!authLoading && currentUser) {
+> 25 |       fetchTasksData();
+     |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  26 |     }
+  27 |   }, [authLoading, currentUser, fetchTasksData]);
+  28 |  react-hooks/set-state-in-effect
+
+Γ£û 4 problems (3 errors, 1 warning)
 

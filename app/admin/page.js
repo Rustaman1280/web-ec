@@ -117,18 +117,21 @@ export default function AdminDashboard() {
           </div>
 
           <div style={{ 
-            background: 'rgba(255,255,255,0.05)', 
+            background: 'var(--gradient-bg)', 
             padding: '2rem', 
             borderRadius: '16px',
-            border: '1px solid var(--border-light)',
-            opacity: 0.5
+            border: '1px solid var(--border-light)'
           }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Question Bank</h3>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-main)' }}>Task Manager</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              Create, edit, and organize question banks. (Coming soon)
+              Create dynamic assignments. Students can claim rewards by completing them.
             </p>
-            <button className="btn-primary" disabled style={{ width: '100%', background: 'transparent', border: '1px solid var(--text-muted)' }}>
-              Manage Questions
+            <button 
+              className="btn-primary" 
+              onClick={() => router.push('/admin/tasks')}
+              style={{ width: '100%', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}
+            >
+              Manage Tasks
             </button>
           </div>
 
