@@ -34,12 +34,12 @@ export default function PointHistory() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '1.5rem' }}>
-         <div className="glass-panel" style={{ padding: '2rem', background: 'var(--gradient-primary)', color: 'white', textAlign: 'center', borderRadius: '16px' }}>
-            <div style={{ fontSize: '3rem', fontWeight: '900' }}>{profile.points || 0}</div>
+         <div className="glass-panel" style={{ padding: '1.5rem 1rem', background: 'var(--gradient-primary)', color: 'white', textAlign: 'center', borderRadius: '16px' }}>
+            <div style={{ fontSize: '2rem', fontWeight: '900' }}>{profile.points || 0}</div>
             <div style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8 }}>Spendable Points</div>
          </div>
-         <div className="glass-panel" style={{ padding: '2rem', background: 'var(--bg-glass)', color: 'var(--accent)', textAlign: 'center', border: '2px solid var(--accent)', borderRadius: '16px' }}>
-            <div style={{ fontSize: '3rem', fontWeight: '900' }}>{profile.exp || 0}</div>
+         <div className="glass-panel" style={{ padding: '1.5rem 1rem', background: 'var(--bg-glass)', color: 'var(--accent)', textAlign: 'center', border: '2px solid var(--accent)', borderRadius: '16px' }}>
+            <div style={{ fontSize: '2rem', fontWeight: '900' }}>{profile.exp || 0}</div>
             <div style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8 }}>Total EXP</div>
          </div>
       </div>
@@ -54,26 +54,45 @@ export default function PointHistory() {
          ) : transactions.length === 0 ? (
             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No transactions found.</div>
          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-               {transactions.map((txn, i) => (
-                 <div key={txn.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 100px 100px', gap: '1rem', padding: '1.5rem', borderBottom: i < transactions.length - 1 ? '1px solid var(--border-light)' : 'none', alignItems: 'center' }}>
-                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                     {new Date(txn.timestamp).toLocaleDateString()} <br/>
-                     <span style={{ fontWeight: 'bold' }}>{new Date(txn.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                   </div>
-                   <div>
-                     <div style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '1.1rem', marginBottom: '5px' }}>{txn.title}</div>
-                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', background: 'var(--bg-surface)', padding: '4px 8px', borderRadius: '12px', display: 'inline-block' }}>{txn.type.replace('_', ' ')}</div>
-                   </div>
-                   <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: (txn.pointChange || 0) >= 0 ? '#10b981' : '#ef4444', textAlign: 'right' }}>
-                     {(txn.pointChange || 0) > 0 ? '+' : ''}{txn.pointChange || 0} Pts
-                   </div>
-                   <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: (txn.expChange || 0) >= 0 ? 'var(--accent)' : '#ef4444', textAlign: 'right' }}>
-                     {(txn.expChange || 0) > 0 ? '+' : ''}{txn.expChange || 0} EXP
-                   </div>
-                 </div>
-               ))}
-            </div>
+             <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {transactions.map((txn, i) => (
+                  <div key={txn.id} style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '70px 1fr 65px 65px', 
+                    gap: '0.75rem', 
+                    padding: '1rem', 
+                    borderBottom: i < transactions.length - 1 ? '1px solid var(--border-light)' : 'none', 
+                    alignItems: 'center' 
+                  }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: '1.2' }}>
+                      {new Date(txn.timestamp).toLocaleDateString([], { day: '2-digit', month: '2-digit' })} <br/>
+                      <span style={{ fontWeight: 'bold' }}>{new Date(txn.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ 
+                        fontWeight: 'bold', 
+                        color: 'var(--text-main)', 
+                        fontSize: '0.9rem', 
+                        marginBottom: '2px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }} title={txn.title}>
+                        {txn.title}
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', background: 'var(--bg-surface)', padding: '2px 6px', borderRadius: '8px', display: 'inline-block' }}>
+                        {txn.type.replace('_', ' ')}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: '900', fontSize: '0.9rem', color: (txn.pointChange || 0) >= 0 ? '#10b981' : '#ef4444', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {(txn.pointChange || 0) > 0 ? '+' : ''}{txn.pointChange || 0} P
+                    </div>
+                    <div style={{ fontWeight: '900', fontSize: '0.9rem', color: (txn.expChange || 0) >= 0 ? 'var(--accent)' : '#ef4444', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {(txn.expChange || 0) > 0 ? '+' : ''}{txn.expChange || 0} E
+                    </div>
+                  </div>
+                ))}
+             </div>
          )}
       </div>
     </div>
