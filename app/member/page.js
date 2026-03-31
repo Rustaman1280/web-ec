@@ -40,9 +40,15 @@ export default function StudentDashboard() {
           <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Student Account</div>
         </div>
         
-        <div style={{ textAlign: 'right' }}>
-           <div style={{ fontSize: '2rem', fontWeight: '900', color: '#fbbf24' }}>{profile.totalScore || 0}</div>
-           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Points</div>
+        <div style={{ display: 'flex', gap: '2rem', textAlign: 'right' }}>
+           <div>
+              <div style={{ fontSize: '2rem', fontWeight: '900', color: '#fbbf24' }}>{profile.points || 0}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Points</div>
+           </div>
+           <div>
+              <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--accent)' }}>{profile.exp || 0}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>EXP</div>
+           </div>
         </div>
       </div>
 
@@ -53,7 +59,7 @@ export default function StudentDashboard() {
              <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Daily Claim <span style={{ color: 'var(--primary)' }}>🔥 {streakData.streakCount} Hari</span></h3>
              {!streakData.checkedInToday ? (
                <button className="btn-primary anim-pop" style={{ padding: '8px 16px', borderRadius: '20px', fontSize: '0.85rem' }} onClick={async () => {
-                 const res = await recordAttendance(profile.id);
+                 const res = await recordAttendance(currentUser.uid);
                  if (res && res.success) {
                    alert(`Daily claimed! +${res.rewardAmt} Pts & +${res.rewardAmt} EXP 🎉`);
                    window.location.reload();
