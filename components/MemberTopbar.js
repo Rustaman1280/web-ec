@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
-import { getStreakData } from '@/lib/economyUtils';
+import { getDailyStreakData } from '@/lib/economyUtils';
 
 export default function MemberTopbar() {
   const { currentUser, profile } = useAuth();
@@ -9,7 +9,7 @@ export default function MemberTopbar() {
 
   useEffect(() => {
     if (currentUser) {
-      getStreakData(currentUser.uid).then(res => setStreakData(res));
+      getDailyStreakData(currentUser.uid).then(res => setStreakData(res));
     }
   }, [currentUser]);
 

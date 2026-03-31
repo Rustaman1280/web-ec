@@ -3,20 +3,26 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getStreakData, recordAttendance } from '@/lib/economyUtils';
+import { getDailyStreakData, recordDailyClaim, fetchUserTransactions } from '@/lib/economyUtils';
 
 export default function StudentDashboard() {
   const router = useRouter();
   const { currentUser, profile, loading } = useAuth();
   const [streakData, setStreakData] = useState({ streakCount: 0, checkedInToday: false });
+  const [lastAttendance, setLastAttendance] = useState(null);
   const [loadingStreak, setLoadingStreak] = useState(true);
 
   useEffect(() => {
     if (!loading && !currentUser) {
       router.push('/auth/login');
     } else if (currentUser) {
-      getStreakData(currentUser.uid).then(res => {
+      getDailyStreakData(currentUser.uid).then(res => {
          setStreakData(res);
+      });
+      // Fetch user's latest 'school_attendance' from history
+      fetchUserTransactions(currentUser.uid).then(txns => {
+         const att = txns.find(t => t.type === 'school_attendance');
+         if(att) setLastAttendance(att);
          setLoadingStreak(false);
       });
     }
@@ -63,9 +69,9 @@ export default function StudentDashboard() {
              <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Daily Claim <span style={{ color: 'var(--primary)' }}>🔥 {streakData.streakCount} Hari</span></h3>
              {!streakData.checkedInToday ? (
                <button className="btn-primary anim-pop" style={{ padding: '8px 16px', borderRadius: '20px', fontSize: '0.85rem' }} onClick={async () => {
-                 const res = await recordAttendance(currentUser.uid);
+                 const res = await recordDailyClaim(currentUser.uid);
                  if (res && res.success) {
-                   alert(`Daily claimed! +${res.rewardAmt} Pts & +${res.rewardAmt} EXP 🎉`);
+                   alert(`Daily bonus claimed! +${res.rewardAmt} Pts & +${res.rewardAmt} EXP 🎉`);
                    window.location.reload();
                  }
                }}>
@@ -126,6 +132,30 @@ export default function StudentDashboard() {
            </div>
         </div>
       )}
+
+      {/* School Attendance Summary */}
+      <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', border: '1px solid var(--border-light)', background: '#fff' }}>
+        <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '2rem' }}>
+           <i className="ti ti-school"></i>
+        </div>
+        <div style={{ flex: 1 }}>
+           <h4 style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.2rem' }}>Ekskul Presence</h4>
+           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              {lastAttendance 
+                 ? `Hadir terakhir: ${new Date(lastAttendance.timestamp).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}` 
+                 : 'Belum ada catatan kehadiran.'}
+           </p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+           <span style={{ 
+              background: lastAttendance ? '#10b981' : '#f1f5f9', 
+              color: lastAttendance ? 'white' : 'var(--text-muted)', 
+              padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold' 
+           }}>
+              {lastAttendance ? 'ACTIVE' : 'NO RECORD'}
+           </span>
+        </div>
+      </div>
 
       {/* Featured Action (Live Quiz) */}
       <div className="glass-panel" style={{ padding: '2.5rem', background: 'var(--gradient-primary)', border: 'none', position: 'relative', overflow: 'hidden' }}>
