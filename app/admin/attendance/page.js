@@ -113,8 +113,8 @@ export default function AdminAttendance() {
                 {Object.keys(attendances).length} / {studentList.length} Present
              </div>
           </div>
-          
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
             <thead>
               <tr style={{ background: 'var(--bg-dark)', color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-light)', borderRadius: '12px 0 0 12px' }}>Student Profile</th>
@@ -172,6 +172,7 @@ export default function AdminAttendance() {
               )}
             </tbody>
           </table>
+          </div>
        </div>
     </div>
   );

@@ -104,9 +104,22 @@ export default function AdminTasksManager() {
 
   return (
     <div className="container" style={{ padding: '0.5rem 1.5rem', paddingLeft: '0' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .admin-tasks-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
+          gap: 2rem;
+          align-items: start;
+        }
+        @media (max-width: 1024px) {
+          .admin-tasks-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}} />
       <h2 className="heading-xl" style={{ fontSize: '2.5rem', marginBottom: '1.5rem', marginTop: '0.5rem' }}>Task Manager</h2>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 500px)', gap: '2rem', alignItems: 'start' }}>
+      <div className="admin-tasks-grid">
         
         {/* Create Task Form */}
         <div className="glass-panel" style={{ padding: '2rem' }}>

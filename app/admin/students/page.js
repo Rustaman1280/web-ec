@@ -154,7 +154,8 @@ export default function AdminStudentManager() {
        )}
        
        <div className="glass-panel" style={{ overflow: 'hidden', padding: '1rem' }}>
-         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+         <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
            <thead>
              <tr style={{ background: 'var(--bg-dark)', color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>
                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-light)', borderRadius: '12px 0 0 12px' }}>Student Name</th>
@@ -297,6 +298,7 @@ export default function AdminStudentManager() {
              )}
            </tbody>
          </table>
+         </div>
        </div>
     </div>
   );
