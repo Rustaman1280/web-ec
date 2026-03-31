@@ -76,10 +76,14 @@ export default function StudentDashboard() {
 
            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', WebkitOverflowScrolling: 'touch' }}>
              {[5, 10, 15, 20, 30].map((rewardAmt, i) => {
-                // Determine block state
-                // If streakCount is 2 (checkedInToday=true), Day 1 & Day 2 are claimed (past & current focus)
-                const isClaimed = streakData.streakCount > i || (streakData.checkedInToday && streakData.streakCount === i);
-                const isTodayFocus = (!streakData.checkedInToday && streakData.streakCount === i) || (streakData.checkedInToday && streakData.streakCount - 1 === i);
+                let visualCount = streakData.streakCount % 5;
+                // If they completed a 5-day cycle today, keep it looking full until tomorrow
+                if (streakData.checkedInToday && visualCount === 0 && streakData.streakCount > 0) {
+                    visualCount = 5;
+                }
+
+                const isClaimed = i < visualCount;
+                const isTodayFocus = streakData.checkedInToday ? (i === visualCount - 1) : (i === visualCount);
                 
                 return (
                   <div key={i} style={{ 
