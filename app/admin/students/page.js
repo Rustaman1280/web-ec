@@ -1,17 +1,22 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, get, update } from 'firebase/database';
 import { registerStudentWithoutLogin } from '@/lib/adminAuthUtils';
+import { recordTransaction, fetchUserTransactions, fetchUserTaskResults } from '@/lib/economyUtils';
 
 export default function AdminStudentManager() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Quick Edit State
   const [editingUid, setEditingUid] = useState(null);
   const [editPts, setEditPts] = useState('');
   const [editExp, setEditExp] = useState('');
+
+  const [expandedUid, setExpandedUid] = useState(null);
+  const [userTxns, setUserTxns] = useState([]);
+  const [userTasksRecord, setUserTasksRecord] = useState([]);
+  const [loadingTxns, setLoadingTxns] = useState(false);
 
   // Add Student State
   const [showAddForm, setShowAddForm] = useState(false);
@@ -71,10 +76,34 @@ export default function AdminStudentManager() {
     setEditExp(currentExp || 0);
   };
 
-  const handleSaveData = async (uid) => {
+  const toggleExpandStudent = async (uid) => {
+    if (expandedUid === uid) {
+      setExpandedUid(null);
+      return;
+    }
+    setExpandedUid(uid);
+    setLoadingTxns(true);
+    
+    // Fetch concurrently
+    const [txns, tasksRes] = await Promise.all([
+       fetchUserTransactions(uid),
+       fetchUserTaskResults(uid)
+    ]);
+    
+    setUserTxns(txns);
+    setUserTasksRecord(tasksRes);
+    setLoadingTxns(false);
+  };
+
+  const handleSaveData = async (uid, oldPts, oldExp) => {
     if (isNaN(editPts) || isNaN(editExp)) return;
     try {
+      const diffPts = parseInt(editPts) - (oldPts || 0);
+      const diffExp = parseInt(editExp) - (oldExp || 0);
       await update(ref(database, `users/${uid}`), { points: parseInt(editPts), exp: parseInt(editExp) });
+      if (diffPts !== 0 || diffExp !== 0) {
+         await recordTransaction(uid, 'admin_override', 'Admin adjustment', diffPts, diffExp);
+      }
       setEditingUid(null);
       await fetchStudents();
     } catch(err) {
@@ -141,51 +170,129 @@ export default function AdminStudentManager() {
                <tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No students registered yet.</td></tr>
              ) : (
                students.map((stu) => (
-                 <tr key={stu.uid} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                   <td style={{ padding: '1.5rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                     <div style={{ 
-                        width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)',
-                        color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold',
-                        backgroundImage: stu.photoUrl ? `url(${stu.photoUrl})` : 'none', backgroundSize: 'cover'
-                     }}>
-                       {!stu.photoUrl && (stu.nickname || stu.fullName || '?').charAt(0).toUpperCase()}
-                     </div>
-                     <div>
-                       <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{stu.fullName}</div>
-                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{stu.nickname && stu.nickname !== stu.fullName ? `AKA ${stu.nickname}` : 'No Custom Nickname'}</div>
-                     </div>
-                   </td>
-                   
-                   <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{stu.email}</td>
-                   
-                   <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--accent)' }}>
-                     {editingUid === stu.uid ? (
-                       <input type="number" value={editExp} onChange={e => setEditExp(e.target.value)} style={{ width: '80px', padding: '6px', borderRadius: '6px' }} />
-                     ) : (
-                       stu.exp || 0
-                     )}
-                   </td>
-                   
-                   <td style={{ padding: '1rem' }}>
-                     {editingUid === stu.uid ? (
-                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                         <input 
-                           type="number" 
-                           value={editPts} 
-                           onChange={(e) => setEditPts(e.target.value)} 
-                           style={{ width: '80px', padding: '6px', borderRadius: '6px' }}
-                         />
-                         <button onClick={() => handleSaveData(stu.uid)} style={{ background: '#10b981', color: 'white', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✓</button>
-                         <button onClick={() => setEditingUid(null)} style={{ background: '#f1f5f9', color: '#64748b', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✕</button>
+                 <React.Fragment key={stu.uid}>
+                   <tr style={{ borderBottom: '1px solid var(--border-light)', background: expandedUid === stu.uid ? 'var(--bg-glass)' : 'transparent' }}>
+                     <td style={{ padding: '1.5rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => toggleExpandStudent(stu.uid)}>
+                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', color: 'var(--primary)'}}>
+                          <i className={`ti ${expandedUid === stu.uid ? 'ti-chevron-down' : 'ti-chevron-right'}`} style={{ fontWeight: 'bold' }}></i>
                        </div>
-                     ) : (
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '900', color: 'var(--primary)' }}>
-                         {stu.points || 0} Pts
-                         <i className="ti ti-pencil" onClick={() => startEditing(stu.uid, stu.points, stu.exp)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }} title="Edit Points & EXP"></i>
+                       <div style={{ 
+                          width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)',
+                          color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold',
+                          backgroundImage: stu.photoUrl ? `url(${stu.photoUrl})` : 'none', backgroundSize: 'cover'
+                       }}>
+                         {!stu.photoUrl && (stu.nickname || stu.fullName || '?').charAt(0).toUpperCase()}
                        </div>
-                     )}
-                   </td>
-                 </tr>
+                       <div>
+                         <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{stu.fullName}</div>
+                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{stu.nickname && stu.nickname !== stu.fullName ? `AKA ${stu.nickname}` : 'No Custom Nickname'}</div>
+                       </div>
+                     </td>
+                     
+                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{stu.email}</td>
+                     
+                     <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--accent)' }}>
+                       {editingUid === stu.uid ? (
+                         <input type="number" value={editExp} onChange={e => setEditExp(e.target.value)} style={{ width: '80px', padding: '6px', borderRadius: '6px' }} />
+                       ) : (
+                         stu.exp || 0
+                       )}
+                     </td>
+                     
+                     <td style={{ padding: '1rem' }}>
+                       {editingUid === stu.uid ? (
+                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                           <input 
+                             type="number" 
+                             value={editPts} 
+                             onChange={(e) => setEditPts(e.target.value)} 
+                             style={{ width: '80px', padding: '6px', borderRadius: '6px' }}
+                           />
+                           <button onClick={() => handleSaveData(stu.uid, stu.points, stu.exp)} style={{ background: '#10b981', color: 'white', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✓</button>
+                           <button onClick={() => setEditingUid(null)} style={{ background: '#f1f5f9', color: '#64748b', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✕</button>
+                         </div>
+                       ) : (
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '900', color: 'var(--primary)' }}>
+                           {stu.points || 0} Pts
+                           <i className="ti ti-pencil" onClick={() => startEditing(stu.uid, stu.points, stu.exp)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }} title="Edit Points & EXP"></i>
+                         </div>
+                       )}
+                     </td>
+                   </tr>
+                   {expandedUid === stu.uid && (
+                     <tr style={{ background: 'var(--bg-dark)' }}>
+                        <td colSpan="4" style={{ padding: '2rem' }}>
+                           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '2rem' }}>
+                               
+                               {/* Task Results */}
+                               <div>
+                                  <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                     <i className="ti ti-checklist"></i> Completed Tasks
+                                  </h4>
+                                  {loadingTxns ? (
+                                    <div style={{ color: 'var(--text-muted)' }}>Loading records...</div>
+                                  ) : userTasksRecord.length === 0 ? (
+                                    <div style={{ color: 'var(--text-muted)', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)' }}>No tasks completed.</div>
+                                  ) : (
+                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-light)', overflow: 'hidden' }}>
+                                      {userTasksRecord.map((tr, i) => (
+                                        <div key={tr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: i < userTasksRecord.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
+                                          <div>
+                                             <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{tr.title}</div>
+                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(tr.claimedAt).toLocaleDateString()} {new Date(tr.claimedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                                          </div>
+                                          <div style={{ textAlign: 'right' }}>
+                                             <div style={{ fontWeight: 'bold', color: '#10b981', fontSize: '0.85rem' }}>+{tr.rewardPoints} Pts</div>
+                                             <div style={{ fontWeight: 'bold', color: 'var(--accent)', fontSize: '0.85rem' }}>+{tr.rewardExp} EXP</div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                               </div>
+
+                               {/* Economy Ledger */}
+                               <div>
+                                  <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                     <i className="ti ti-history"></i> Economy Ledger
+                                  </h4>
+                                  {loadingTxns ? (
+                                    <div style={{ color: 'var(--text-muted)' }}>Loading records...</div>
+                                  ) : userTxns.length === 0 ? (
+                                    <div style={{ color: 'var(--text-muted)', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)' }}>No transactions recorded.</div>
+                                  ) : (
+                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-light)', overflow: 'hidden', maxHeight: '400px', overflowY: 'auto' }}>
+                                      {userTxns.map((txn, i) => (
+                                        <div key={txn.id} style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr min-content', gap: '1rem', padding: '1rem', borderBottom: i < userTxns.length - 1 ? '1px solid var(--border-light)' : 'none', alignItems: 'center' }}>
+                                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                            {new Date(txn.timestamp).toLocaleDateString()} <br/>{new Date(txn.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                          </div>
+                                          <div>
+                                            <div style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>{txn.title}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{txn.type.replace('_', ' ')}</div>
+                                          </div>
+                                          <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                            {(txn.pointChange !== 0) && (
+                                              <div style={{ fontWeight: 'bold', color: (txn.pointChange || 0) >= 0 ? '#10b981' : '#ef4444' }}>
+                                                {(txn.pointChange || 0) >= 0 ? '+' : ''}{txn.pointChange} Pts
+                                              </div>
+                                            )}
+                                            {(txn.expChange !== 0) && (
+                                              <div style={{ fontWeight: 'bold', color: (txn.expChange || 0) >= 0 ? 'var(--accent)' : '#ef4444' }}>
+                                                {(txn.expChange || 0) >= 0 ? '+' : ''}{txn.expChange} EXP
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                               </div>
+                           </div>
+                        </td>
+                     </tr>
+                   )}
+                 </React.Fragment>
                ))
              )}
            </tbody>

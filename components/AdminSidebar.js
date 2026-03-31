@@ -11,6 +11,7 @@ export default function AdminSidebar() {
     { name: 'Live Quizzes', path: '/admin/live', icon: 'ti-device-tv' },
     { name: 'Task Manager', path: '/admin/tasks', icon: 'ti-clipboard-list' },
     { name: 'Student Management', path: '/admin/students', icon: 'ti-users' },
+    { name: 'Attendance', path: '/admin/attendance', icon: 'ti-calendar-check' },
   ];
 
   return (
