@@ -79,10 +79,18 @@ export default function TasksPage() {
                 
                 {!isCompleted && (
                   <button 
-                    onClick={() => handleClaim(task.id, task.rewardPoints, task.rewardExp)}
+                    onClick={() => {
+                        if(task.questions && task.questions.length > 0) {
+                           // Navigate to assessment mode
+                           window.location.href = `/member/tasks/${task.id}`;
+                        } else {
+                           // Legacy empty task fallback
+                           handleClaim(task.id, task.rewardPoints, task.rewardExp);
+                        }
+                    }}
                     disabled={isClaiming}
-                    style={{ background: 'var(--gradient-primary)', color: 'white', padding: '8px 20px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.85rem', cursor: isClaiming ? 'wait' : 'pointer' }}>
-                    {isClaiming ? 'Claiming...' : 'Complete & Run'}
+                    style={{ background: 'var(--gradient-primary)', color: 'white', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem', cursor: isClaiming ? 'wait' : 'pointer', border: 'none' }}>
+                    {isClaiming ? 'Processing...' : 'Start Assignment'}
                   </button>
                 )}
                 {isCompleted && (

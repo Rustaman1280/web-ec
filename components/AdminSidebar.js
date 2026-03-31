@@ -8,9 +8,9 @@ export default function AdminSidebar() {
 
   const menu = [
     { name: 'Dashboard', path: '/admin', icon: 'ti-dashboard' },
+    { name: 'Live Quizzes', path: '/admin/live', icon: 'ti-device-tv' },
     { name: 'Task Manager', path: '/admin/tasks', icon: 'ti-clipboard-list' },
     { name: 'Student Management', path: '/admin/students', icon: 'ti-users' },
-    { name: 'Question Bank', path: '/admin/questions', icon: 'ti-book', disabled: true },
   ];
 
   return (

@@ -2,14 +2,24 @@
 import { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, get, update } from 'firebase/database';
+import { registerStudentWithoutLogin } from '@/lib/adminAuthUtils';
 
 export default function AdminStudentManager() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Economy Edit States
-  const [editingUi, setEditingUi] = useState({ uid: null, field: null }); // field: 'exp' or 'points'
-  const [editAmount, setEditAmount] = useState('');
+  // Quick Edit State
+  const [editingUid, setEditingUid] = useState(null);
+  const [editPoints, setEditPoints] = useState('');
+
+  // Add Student State
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [registering, setRegistering] = useState(false);
+  const [regError, setRegError] = useState('');
+  const [regSuccess, setRegSuccess] = useState('');
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -28,45 +38,89 @@ export default function AdminStudentManager() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line
     fetchStudents();
   }, []);
 
-  const openEditor = (uid, field) => {
-    setEditingUi({ uid, field });
-    setEditAmount('');
-  };
-
-  const handleEconomyAction = async (uid, field, actionType) => {
-    if (!editAmount || isNaN(editAmount)) return;
-    const amount = parseInt(editAmount);
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setRegError(''); setRegSuccess('');
+    if (!newName || !newEmail || newPassword.length < 6) {
+      setRegError('All fields required. Password must be 6+ chars.');
+      return;
+    }
     
+    setRegistering(true);
     try {
-      const userRef = ref(database, `users/${uid}`);
-      const snap = await get(userRef);
-      if(snap.exists()) {
-         const current = snap.val()[field] || 0;
-         let newValue = current;
-         
-         if(actionType === 'add') newValue += amount;
-         else if(actionType === 'sub') newValue = Math.max(0, current - amount);
-         else if(actionType === 'set') newValue = Math.max(0, amount);
-         
-         await update(userRef, { [field]: newValue });
-         setEditingUi({ uid: null, field: null });
-         await fetchStudents();
-      }
+      await registerStudentWithoutLogin(newName, newEmail, newPassword);
+      setRegSuccess(`Successfully registered ${newName}!`);
+      setNewName(''); setNewEmail(''); setNewPassword('');
+      setShowAddForm(false);
+      await fetchStudents(); // Refresh table
     } catch(err) {
       console.error(err);
-      alert("Failed to update " + field);
+      setRegError(err.message || 'Failed to register student.');
+    }
+    setRegistering(false);
+  };
+
+  const startEditing = (uid, currentPts) => {
+    setEditingUid(uid);
+    setEditPoints(currentPts || 0);
+  };
+
+  const handleSavePoints = async (uid) => {
+    if (isNaN(editPoints)) return;
+    try {
+      await update(ref(database, `users/${uid}`), { points: parseInt(editPoints) });
+      setEditingUid(null);
+      await fetchStudents();
+    } catch(err) {
+      console.error(err);
+      alert("Failed to update points.");
     }
   };
 
   return (
-    <div style={{ padding: '0.5rem 1.5rem', paddingLeft: '0' }}>
-       <h2 className="heading-xl" style={{ fontSize: '2.5rem', marginBottom: '1.5rem', marginTop: '0.5rem' }}>Student Management</h2>
-       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-         Monitor registered students, track their EXP Leaderboard rank, and manually adjust their Points & EXP.
-       </p>
+    <div style={{ padding: '1rem' }}>
+       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+         <div>
+           <h2 className="heading-xl" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', marginTop: '0.5rem' }}>Student Management</h2>
+           <p style={{ color: 'var(--text-muted)' }}>
+             Monitor registered students, track their EXP Leaderboard rank, and manually adjust their Points.
+           </p>
+         </div>
+         <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)} style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+           <i className="ti ti-user-plus" style={{ fontSize: '1.2rem' }}></i> {showAddForm ? 'Close Form' : 'Register New Student'}
+         </button>
+       </div>
+
+       {showAddForm && (
+         <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', background: '#f8fafc', border: '2px dashed var(--primary)' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1.5rem', color: 'var(--primary)' }}>Add New Student</h3>
+            
+            {regError && <div style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 'bold' }}>{regError}</div>}
+            {regSuccess && <div style={{ color: '#10b981', marginBottom: '1rem', fontWeight: 'bold' }}>{regSuccess}</div>}
+            
+            <form onSubmit={handleRegister} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto', gap: '1rem', alignItems: 'end' }}>
+               <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Full Name</label>
+                  <input type="text" value={newName} onChange={e => setNewName(e.target.value)} required placeholder="John Doe" />
+               </div>
+               <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Email</label>
+                  <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} required placeholder="student@example.com" />
+               </div>
+               <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Password</label>
+                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required placeholder="Min. 6 chars" />
+               </div>
+               <button type="submit" disabled={registering} style={{ padding: '14px 24px', background: 'var(--primary)', color: 'white', fontWeight: 'bold', border: 'none', borderRadius: '12px', cursor: registering ? 'wait' : 'pointer', height: '100%' }}>
+                  {registering ? 'Creating...' : '+ Add'}
+               </button>
+            </form>
+         </div>
+       )}
        
        <div className="glass-panel" style={{ overflow: 'hidden', padding: '1rem' }}>
          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -102,48 +156,24 @@ export default function AdminStudentManager() {
                    
                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{stu.email}</td>
                    
-                   {/* EXP COLUMN */}
-                   <td style={{ padding: '1rem' }}>
-                     {editingUi.uid === stu.uid && editingUi.field === 'exp' ? (
-                       <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', maxWidth: '180px' }}>
-                         <input 
-                           type="number" min="0" placeholder="Amount" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} 
-                           style={{ width: '100%', padding: '6px', borderRadius: '6px' }}
-                         />
-                         <div style={{ display: 'flex', gap: '5px', width: '100%' }}>
-                           <button onClick={() => handleEconomyAction(stu.uid, 'exp', 'add')} style={{ flex: 1, background: '#10b981', color: 'white', padding: '6px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>+</button>
-                           <button onClick={() => handleEconomyAction(stu.uid, 'exp', 'sub')} style={{ flex: 1, background: '#ef4444', color: 'white', padding: '6px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>-</button>
-                           <button onClick={() => handleEconomyAction(stu.uid, 'exp', 'set')} style={{ flex: 1, background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>Set</button>
-                           <button onClick={() => setEditingUi({ uid: null, field: null })} style={{ background: '#f1f5f9', color: '#64748b', padding: '6px 10px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>✕</button>
-                         </div>
-                       </div>
-                     ) : (
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '900', color: 'var(--accent)' }}>
-                         {stu.exp || 0}
-                         <i className="ti ti-pencil" onClick={() => openEditor(stu.uid, 'exp')} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }}></i>
-                       </div>
-                     )}
-                   </td>
+                   <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--accent)' }}>{stu.exp || 0}</td>
                    
-                   {/* POINTS COLUMN */}
                    <td style={{ padding: '1rem' }}>
-                     {editingUi.uid === stu.uid && editingUi.field === 'points' ? (
-                       <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', maxWidth: '180px' }}>
+                     {editingUid === stu.uid ? (
+                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                          <input 
-                           type="number" min="0" placeholder="Amount" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} 
-                           style={{ width: '100%', padding: '6px', borderRadius: '6px' }}
+                           type="number" 
+                           value={editPoints} 
+                           onChange={(e) => setEditPoints(e.target.value)} 
+                           style={{ width: '80px', padding: '6px', borderRadius: '6px' }}
                          />
-                         <div style={{ display: 'flex', gap: '5px', width: '100%' }}>
-                           <button onClick={() => handleEconomyAction(stu.uid, 'points', 'add')} style={{ flex: 1, background: '#10b981', color: 'white', padding: '6px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>+</button>
-                           <button onClick={() => handleEconomyAction(stu.uid, 'points', 'sub')} style={{ flex: 1, background: '#ef4444', color: 'white', padding: '6px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>-</button>
-                           <button onClick={() => handleEconomyAction(stu.uid, 'points', 'set')} style={{ flex: 1, background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>Set</button>
-                           <button onClick={() => setEditingUi({ uid: null, field: null })} style={{ background: '#f1f5f9', color: '#64748b', padding: '6px 10px', borderRadius: '6px', fontWeight: 'bold', border: 'none' }}>✕</button>
-                         </div>
+                         <button onClick={() => handleSavePoints(stu.uid)} style={{ background: '#10b981', color: 'white', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✓</button>
+                         <button onClick={() => setEditingUid(null)} style={{ background: '#f1f5f9', color: '#64748b', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✕</button>
                        </div>
                      ) : (
                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '900', color: 'var(--primary)' }}>
                          {stu.points || 0} Pts
-                         <i className="ti ti-pencil" onClick={() => openEditor(stu.uid, 'points')} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }}></i>
+                         <i className="ti ti-pencil" onClick={() => startEditing(stu.uid, stu.points)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }}></i>
                        </div>
                      )}
                    </td>

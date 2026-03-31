@@ -27,47 +27,7 @@ export default function AdminDashboard() {
      fetchStats();
   }, []);
 
-  // Mock questions for demo purposes
-  const DEMO_QUESTIONS = [
-    {
-      id: 'q1',
-      text: 'What is the past tense of "Go"?',
-      options: ['Went', 'Gone', 'Going', 'Goed'],
-      correctIndex: 0,
-      timeLimit: 20
-    },
-    {
-      id: 'q2',
-      text: 'Choose the correct sentence:',
-      options: ['He do not like apples.', 'He unlikes apples.', 'He does not like apples.', 'He not like apples.'],
-      correctIndex: 2,
-      timeLimit: 30
-    },
-    {
-      id: 'q3',
-      text: 'Which word is an adjective?',
-      options: ['Run', 'Beautiful', 'Quickly', 'Happiness'],
-      correctIndex: 1,
-      timeLimit: 20
-    }
-  ];
 
-  const handleCreateSession = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const pin = await createQuizSession('demo-quiz', DEMO_QUESTIONS);
-      if(pin) {
-        router.push(`/admin/quiz/${pin}`);
-      } else {
-        setError('Failed to create session.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('An error occurred.');
-    }
-    setLoading(false);
-  };
 
   return (
     <div style={{ padding: '1rem' }}>
@@ -94,9 +54,9 @@ export default function AdminDashboard() {
           
           {error && <div style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
           
-          <button onClick={handleCreateSession} disabled={loading} className="btn-primary" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center' }}>
+          <button onClick={() => router.push('/admin/live')} disabled={loading} className="btn-primary" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center' }}>
             <i className="ti ti-device-tv" style={{ marginRight: '10px', fontSize: '1.4rem' }}></i> 
-            {loading ? 'Generating PIN...' : 'Host Live Quiz Display'}
+            Open Live Quiz Menu
           </button>
        </div>
     </div>

@@ -1,68 +1,14 @@
 ﻿
 D:\Rustaman\ekskul\EC\englishclubweb\app\admin\tasks\page.js
-  33:10  error  Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-  31 |          router.push('/auth/login');
-  32 |       } else {
-> 33 |          fetchTasks();
-     |          ^^^^^^^^^^ Avoid calling setState() directly within an effect
-  34 |       }
-  35 |     }
-  36 |   }, [currentUser, profile, authLoading, router]);  react-hooks/set-state-in-effect
+  137:177  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  137:192  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
 
 D:\Rustaman\ekskul\EC\englishclubweb\app\member\leaderboard\page.js
-  14:7  error    Error: Cannot access variable before it is declared
+  41:6  warning  React Hook useEffect has a missing dependency: 'fetchLeaderboard'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
-`fetchLeaderboard` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+D:\Rustaman\ekskul\EC\englishclubweb\app\member\tasks\[id]\page.js
+  37:7  warning  Unused eslint-disable directive (no problems were reported)
 
-  12 |   useEffect(() => {
-  13 |     if(!authLoading && profile) {
-> 14 |       fetchLeaderboard();
-     |       ^^^^^^^^^^^^^^^^ `fetchLeaderboard` accessed before it is declared
-  15 |     }
-  16 |   }, [authLoading, profile]);
-  17 |
-
-  16 |   }, [authLoading, profile]);
-  17 |
-> 18 |   const fetchLeaderboard = async () => {
-     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 19 |     setLoading(true);
-     | ^^^^^^^^^^^^^^^^^^^^^
-> 20 |     if (!database) { setLoading(false); return; }
-     ΓÇª
-     | ^^^^^^^^^^^^^^^^^^^^^
-> 39 |     setLoading(false);
-     | ^^^^^^^^^^^^^^^^^^^^^
-> 40 |   };
-     | ^^^^^ `fetchLeaderboard` is declared here
-  41 |
-  42 |   if (authLoading || !profile) {
-  43 |     return <div style={{ textAlign: 'center', marginTop: '30vh' }}>Loading...</div>;  react-hooks/immutability
-  16:6  warning  React Hook useEffect has a missing dependency: 'fetchLeaderboard'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
-
-D:\Rustaman\ekskul\EC\englishclubweb\app\member\tasks\page.js
-  25:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-  23 |   useEffect(() => {
-  24 |     if (!authLoading && currentUser) {
-> 25 |       fetchTasksData();
-     |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  26 |     }
-  27 |   }, [authLoading, currentUser, fetchTasksData]);
-  28 |  react-hooks/set-state-in-effect
-
-Γ£û 4 problems (3 errors, 1 warning)
+Γ£û 4 problems (2 errors, 2 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
 
