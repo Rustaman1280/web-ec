@@ -1,0 +1,19 @@
+﻿
+D:\Rustaman\ekskul\EC\englishclubweb\app\auth\login\page.js
+  66:14  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\Rustaman\ekskul\EC\englishclubweb\app\member\quiz\[id]\page.js
+  89:25  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  87 |     
+  88 |     setHasAnswered(true);
+> 89 |     const timeTakenMs = Date.now() - questionStartTime;
+     |                         ^^^^^^^^^^ Cannot call impure function
+  90 |     const isCorrect = session.questions[session.currentQuestionIndex].correctIndex === index;
+  91 |     
+  92 |     await submitAnswer(pin, profile.id, index, timeTakenMs, isCorrect);  react-hooks/purity
+
+Γ£û 2 problems (2 errors, 0 warnings)
+
