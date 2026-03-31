@@ -40,15 +40,19 @@ export default function StudentDashboard() {
           <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Student Account</div>
         </div>
         
-        <div style={{ display: 'flex', gap: '2rem', textAlign: 'right' }}>
-           <div>
-              <div style={{ fontSize: '2rem', fontWeight: '900', color: '#fbbf24' }}>{profile.points || 0}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Points</div>
-           </div>
-           <div>
-              <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--accent)' }}>{profile.exp || 0}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>EXP</div>
-           </div>
+        {/* Avatar Profile */}
+        <div>
+           {profile.photoUrl ? (
+             <img src={profile.photoUrl} alt="Profile" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)' }} />
+           ) : (
+             <div style={{ 
+                width: '64px', height: '64px', borderRadius: '50%', background: 'var(--gradient-primary)', 
+                color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', 
+                fontSize: '1.8rem', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)'
+             }}>
+                {(profile.nickname || profile.fullName || 'S').charAt(0).toUpperCase()}
+             </div>
+           )}
         </div>
       </div>
 

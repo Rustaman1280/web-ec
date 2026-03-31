@@ -1,4 +1,5 @@
 import BottomBar from '@/components/BottomBar';
+import MemberTopbar from '@/components/MemberTopbar';
 
 export default function MemberLayout({ children }) {
   return (
@@ -11,21 +12,8 @@ export default function MemberLayout({ children }) {
       boxShadow: '0 0 50px rgba(0,0,0,0.05)',
       overflowX: 'hidden'
     }}>
-      {/* Small mobile header */}
-      <header style={{
-        padding: '1rem',
-        borderBottom: '1px solid var(--border-light)',
-        backdropFilter: 'blur(10px)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        backgroundColor: 'var(--bg-glass)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>EC <span className="text-gradient">Quiz</span></h2>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Player Mode</div>
-        </div>
-      </header>
+      {/* Stats Mobile Header */}
+      <MemberTopbar />
       
       <main style={{ padding: '1.5rem', minHeight: 'calc(100vh - 65px)', paddingBottom: '90px' }}>
         {children}

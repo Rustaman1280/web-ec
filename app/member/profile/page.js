@@ -30,23 +30,24 @@ export default function ProfilePage() {
   const handleNicknameChange = async () => {
     if(!newNick || newNick === profile.nickname) return;
     setNickLoading(true);
-    const success = await changeNickname(currentUser.uid, newNick, 500);
+    const success = await changeNickname(currentUser.uid, newNick, 50);
     if(success) {
       alert("Nickname changed successfully!");
       setIsEditingNick(false);
     } else {
-      alert("Not enough Points! This costs 500 Pts.");
+      alert("Not enough Points! This costs 50 Pts.");
     }
-    setNickLoading(false);
+    setNickLoading(true);
   };
 
-  const exchangeExp = async () => {
+  const exchangeExp = async (pts) => {
     setExpConverting(true);
-    const success = await convertPointsToExp(currentUser.uid, 500, 500); // Spend 500 pts for 500 EXP
+    const gain = pts * 5;
+    const success = await convertPointsToExp(currentUser.uid, pts, gain);
     if(success) {
-      alert("Successfully converted 500 Points into 500 EXP!");
+      alert(`Successfully converted ${pts} Points into ${gain} EXP!`);
     } else {
-      alert("Not enough Points! You need at least 500 Pts to exchange.");
+      alert(`Not enough Points! You need at least ${pts} Pts to exchange.`);
     }
     setExpConverting(false);
   };
@@ -55,9 +56,9 @@ export default function ProfilePage() {
     const file = e.target.files[0];
     if(!file) return;
     
-    // Check if they have enough balance (Cost 1000 Pts)
-    if((profile.points || 0) < 1000) {
-      alert("Changing your avatar costs 1000 Pts! You don't have enough Points.");
+    // Check if they have enough balance (Cost 100)
+    if((profile.points || 0) < 100) {
+      alert("Changing your avatar costs 100 Pts! You don't have enough Points.");
       return;
     }
 
@@ -95,7 +96,7 @@ export default function ProfilePage() {
       
       const userRef = ref(database, `users/${currentUser.uid}`);
       await update(userRef, {
-        points: profile.points - 1000,
+        points: profile.points - 100,
         photoUrl: secureUrl
       });
       alert('Avatar successfully updated!');
@@ -183,7 +184,7 @@ export default function ProfilePage() {
           <li style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
                <span style={{ fontWeight: '600', display: 'block' }}>Change Nickname</span>
-               <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>Costs 500 Pts</span>
+               <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>Costs 50 Pts</span>
             </div>
             <button onClick={() => setIsEditingNick(!isEditingNick)} style={{ padding: '8px 16px', borderRadius: '8px', background: '#f1f5f9', fontWeight: 'bold', color: 'var(--text-main)' }}>
                {isEditingNick ? 'Cancel' : 'Buy'}
@@ -192,18 +193,27 @@ export default function ProfilePage() {
           <li style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
                <span style={{ fontWeight: '600', display: 'block' }}>Custom Avatar / Photo</span>
-               <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>Costs 1000 Pts</span>
+               <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>Costs 100 Pts</span>
             </div>
             <button onClick={() => fileInputRef.current?.click()} style={{ padding: '8px 16px', borderRadius: '8px', background: '#f1f5f9', fontWeight: 'bold', color: 'var(--text-main)' }}>
                Buy
             </button>
           </li>
+          <li style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+               <span style={{ fontWeight: '600', display: 'block' }}>Exchange EXP (Small)</span>
+               <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>50 Pts ➔ 250 EXP</span>
+            </div>
+            <button onClick={() => exchangeExp(50)} disabled={expConverting} style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--gradient-primary)', fontWeight: 'bold', color: 'white', opacity: expConverting ? 0.7 : 1 }}>
+               Exchange
+            </button>
+          </li>
           <li style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-               <span style={{ fontWeight: '600', display: 'block' }}>Convert Points to EXP</span>
-               <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>500 Pts ➔ 500 EXP</span>
+               <span style={{ fontWeight: '600', display: 'block' }}>Exchange EXP (Large)</span>
+               <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>100 Pts ➔ 500 EXP</span>
             </div>
-            <button onClick={exchangeExp} disabled={expConverting} style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--gradient-primary)', fontWeight: 'bold', color: 'white', opacity: expConverting ? 0.7 : 1 }}>
+            <button onClick={() => exchangeExp(100)} disabled={expConverting} style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--gradient-primary)', fontWeight: 'bold', color: 'white', opacity: expConverting ? 0.7 : 1 }}>
                Exchange
             </button>
           </li>
