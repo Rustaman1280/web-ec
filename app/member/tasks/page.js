@@ -9,6 +9,7 @@ export default function TasksPage() {
   const [completedTaskIds, setCompletedTaskIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState(null);
+  const [now] = useState(() => Date.now());
 
   const fetchTasksData = useCallback(async () => {
     if(!currentUser) return;
@@ -57,6 +58,7 @@ export default function TasksPage() {
              <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No tasks assigned by Admin yet.</div>
         ) : tasks.map((task) => {
           const isCompleted = completedTaskIds.includes(task.id);
+          const isExpired = task.deadline && now > task.deadline;
           const isClaiming = claimingId === task.id;
 
           return (
@@ -69,6 +71,12 @@ export default function TasksPage() {
                     {isCompleted ? 'Completed' : 'Pending'}
                   </span>
                 </div>
+                {task.deadline && (
+                  <div style={{ marginTop: '4px', fontSize: '0.8rem', color: isExpired ? '#ef4444' : '#f59e0b', fontWeight: 'bold' }}>
+                    <i className="ti ti-clock" style={{ marginRight: '4px' }}></i>
+                    Due: {new Date(task.deadline).toLocaleDateString()}
+                  </div>
+                )}
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
@@ -77,20 +85,19 @@ export default function TasksPage() {
                   <span style={{ fontWeight: '900', color: 'var(--accent)', fontSize: '0.9rem' }}>+{task.rewardExp} EXP</span>
                 </div>
                 
-                {!isCompleted && (
+                {!isCompleted && !isExpired && (
                   <button 
                     onClick={() => {
-                        if(task.questions && task.questions.length > 0) {
-                           // Navigate to assessment mode
-                           window.location.href = `/member/tasks/${task.id}`;
-                        } else {
-                           // Legacy empty task fallback
-                           handleClaim(task.id, task.rewardPoints, task.rewardExp);
-                        }
+                        window.location.href = `/member/tasks/${task.id}`;
                     }}
                     disabled={isClaiming}
                     style={{ background: 'var(--gradient-primary)', color: 'white', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem', cursor: isClaiming ? 'wait' : 'pointer', border: 'none' }}>
                     {isClaiming ? 'Processing...' : 'Start Assignment'}
+                  </button>
+                )}
+                {!isCompleted && isExpired && (
+                  <button disabled style={{ background: '#f1f5f9', color: '#64748b', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem', border: 'none' }}>
+                    Deadline Passed
                   </button>
                 )}
                 {isCompleted && (

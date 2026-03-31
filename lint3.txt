@@ -1,0 +1,30 @@
+﻿
+D:\Rustaman\ekskul\EC\englishclubweb\app\admin\live\page.js
+  33:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  31 |
+  32 |   useEffect(() => {
+> 33 |     fetchQuizzes();
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  34 |   }, [fetchQuizzes]);
+  35 |
+  36 |   const handleDelete = async (id) => {  react-hooks/set-state-in-effect
+
+D:\Rustaman\ekskul\EC\englishclubweb\app\admin\quiz\[id]\page.js
+  133:33  error  Parsing error: Expecting Unicode escape sequence \uXXXX. (133:33)
+
+D:\Rustaman\ekskul\EC\englishclubweb\app\member\leaderboard\page.js
+  38:7  warning  Unused eslint-disable directive (no problems were reported)
+
+D:\Rustaman\ekskul\EC\englishclubweb\app\member\tasks\[id]\page.js
+  41:7  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+Γ£û 4 problems (2 errors, 2 warnings)
+  0 errors and 2 warnings potentially fixable with the `--fix` option.
+

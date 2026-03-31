@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { createTask, getAllTasks } from '@/lib/economyUtils';
+import { createTask, getAllTasks, deleteTask } from '@/lib/economyUtils';
 
 export default function AdminTasksManager() {
   const router = useRouter();
@@ -10,13 +10,15 @@ export default function AdminTasksManager() {
   
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [now] = useState(() => Date.now());
   
   // Form State
   const [title, setTitle] = useState('');
   const [type, setType] = useState('Required');
   const [points, setPoints] = useState('100');
   const [exp, setExp] = useState('100');
-  const [questions, setQuestions] = useState([]);
+  const [deadlineDate, setDeadlineDate] = useState(''); // YYYY-MM-DD
+  const [blocks, setBlocks] = useState([]); // { id, type: 'mcq' | 'essay' | 'photo', text: string, options?: string[], correctIndex?: number }
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -27,46 +29,73 @@ export default function AdminTasksManager() {
   const fetchTasks = async () => {
     setLoading(true);
     const data = await getAllTasks();
-    setTasks(data);
+    // sort by newest
+    setTasks(data.sort((a,b) => b.createdAt - a.createdAt));
     setLoading(false);
   };
 
-  const handleAddQuestion = () => {
-    setQuestions([...questions, { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0 }]);
+  const handleDeleteTask = async (id) => {
+    if(confirm("Are you sure you want to delete this task?")) {
+       await deleteTask(id);
+       fetchTasks();
+    }
   };
 
-  const handleRemoveQuestion = (idx) => {
-    setQuestions(questions.filter((_, i) => i !== idx));
+  // Block Builder Handlers
+  const handleAddBlock = (type) => {
+    const newBlock = { id: Date.now().toString(), type, text: '' };
+    if (type === 'mcq') {
+       newBlock.options = ['', '', '', ''];
+       newBlock.correctIndex = 0;
+    }
+    setBlocks([...blocks, newBlock]);
   };
 
-  const setQuestionField = (idx, field, value) => {
-    const updated = [...questions];
+  const handleRemoveBlock = (idx) => {
+    setBlocks(blocks.filter((_, i) => i !== idx));
+  };
+
+  const setBlockField = (idx, field, value) => {
+    const updated = [...blocks];
     updated[idx][field] = value;
-    setQuestions(updated);
+    setBlocks(updated);
   };
 
-  const setOptionText = (qIdx, optIdx, value) => {
-    const updated = [...questions];
-    updated[qIdx].options[optIdx] = value;
-    setQuestions(updated);
+  const setOptionText = (bIdx, optIdx, value) => {
+    const updated = [...blocks];
+    updated[bIdx].options[optIdx] = value;
+    setBlocks(updated);
   };
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
     if(!title) return;
     
+    if (blocks.length === 0) return alert("Please add at least 1 block to this assignment.");
+    
     // Basic validation
-    for (let i = 0; i < questions.length; i++) {
-       if(!questions[i].text) return alert(`Question ${i+1} is missing text.`);
-       for(let j=0; j<4; j++) {
-         if(!questions[i].options[j]) return alert(`Question ${i+1} is missing Option ${j+1}.`);
+    for (let i = 0; i < blocks.length; i++) {
+       const b = blocks[i];
+       if (!b.text.trim()) return alert(`Block ${i+1} is missing instructions/text.`);
+       if (b.type === 'mcq') {
+         for(let j=0; j<4; j++) {
+           if(!b.options[j].trim()) return alert(`Block ${i+1} is missing Option ${j+1}.`);
+         }
        }
     }
 
+    let deadlineMs = null;
+    if (deadlineDate) {
+       // Set deadline to the end of the selected day
+       const dateObj = new Date(deadlineDate);
+       dateObj.setHours(23, 59, 59, 999);
+       deadlineMs = dateObj.getTime();
+    }
+
     setIsSubmitting(true);
-    await createTask(title, type, points, exp, questions);
+    await createTask(title, type, points, exp, blocks, deadlineMs);
     
-    setTitle(''); setQuestions([]);
+    setTitle(''); setBlocks([]); setDeadlineDate('');
     await fetchTasks();
     setIsSubmitting(false);
   };
@@ -81,65 +110,94 @@ export default function AdminTasksManager() {
         
         {/* Create Task Form */}
         <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>Create Assessment Task</h2>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>Create New Task</h2>
           <form onSubmit={handleCreateTask} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Assignment Title</label>
-              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. Chapter 3: Grammar Exam" />
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+               <div>
+                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Assignment Title</label>
+                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. Unit 3 Test" />
+               </div>
+               <div>
+                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Deadline (Optional)</label>
+                 <input type="date" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} />
+               </div>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Type</label>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Category</label>
                 <select 
                   value={type} onChange={(e) => setType(e.target.value)} 
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', outline: 'none' }}>
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #cbd5e1', outline: 'none' }}>
                   <option value="Required">Required</option>
                   <option value="Optional">Optional</option>
                   <option value="Practice">Practice</option>
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Reward Pts</label>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Total Completion Pts</label>
                 <input type="number" value={points} onChange={(e) => setPoints(e.target.value)} min="0" required />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Reward EXP</label>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Total Completion EXP</label>
                 <input type="number" value={exp} onChange={(e) => setExp(e.target.value)} min="0" required />
               </div>
             </div>
 
+            {/* Hybrid Block Builder */}
             <div style={{ borderTop: '2px dashed var(--border-light)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Questions ({questions.length})</h3>
-                 <button type="button" onClick={handleAddQuestion} style={{ background: '#f1f5f9', color: 'var(--primary)', padding: '6px 12px', borderRadius: '8px', fontWeight: 'bold', border: '1px solid #cbd5e1', cursor: 'pointer' }}>+ Add Question</button>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Task Blocks ({blocks.length})</h3>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" onClick={() => handleAddBlock('mcq')} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#e0e7ff', color: '#4f46e5', border: '1px solid #c7d2fe' }}>+ MCQ</button>
+                    <button type="button" onClick={() => handleAddBlock('essay')} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#fae8ff', color: '#c026d3', border: '1px solid #f5d0fe' }}>+ Essay</button>
+                    <button type="button" onClick={() => handleAddBlock('photo')} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#dcfce7', color: '#16a34a', border: '1px solid #bbf7d0' }}>+ Photo</button>
+                 </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                 {questions.map((q, qIndex) => (
-                   <div key={q.id} style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <strong style={{ color: 'var(--text-muted)' }}>Question {qIndex + 1}</strong>
-                        <i className="ti ti-trash" style={{ color: '#ef4444', cursor: 'pointer' }} onClick={() => handleRemoveQuestion(qIndex)}></i>
-                     </div>
-                     <input type="text" placeholder="Enter your question here..." value={q.text} onChange={e => setQuestionField(qIndex, 'text', e.target.value)} style={{ marginBottom: '10px' }} required />
+                 {blocks.map((b, bIndex) => (
+                   <div key={b.id} style={{ background: 'var(--bg-surface)', padding: '1rem', borderRadius: '12px', border: b.type === 'mcq' ? '2px solid #c7d2fe' : b.type === 'essay' ? '2px solid #f5d0fe' : '2px solid #bbf7d0' }}>
                      
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        {q.options.map((opt, oIndex) => (
-                           <div key={oIndex} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                             <input type="radio" name={`correct-${q.id}`} checked={q.correctIndex === oIndex} onChange={() => setQuestionField(qIndex, 'correctIndex', oIndex)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                             <input type="text" value={opt} onChange={e => setOptionText(qIndex, oIndex, e.target.value)} placeholder={`Option ${oIndex + 1}`} style={{ padding: '8px', fontSize: '0.9rem' }} required />
-                           </div>
-                        ))}
+                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: '900', textTransform: 'uppercase', color: b.type === 'mcq' ? '#4f46e5' : b.type === 'essay' ? '#c026d3' : '#16a34a' }}>
+                           Block {bIndex + 1}: {b.type === 'mcq' ? 'Multiple Choice' : b.type === 'essay' ? 'Text / Essay' : 'Photo Upload'}
+                        </div>
+                        <i className="ti ti-trash" style={{ color: '#ef4444', cursor: 'pointer', padding: '4px' }} onClick={() => handleRemoveBlock(bIndex)} title="Remove Block"></i>
                      </div>
+                     
+                     {/* Text / Instruction common for all */}
+                     <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Instruction / Prompt / Question</label>
+                     <textarea 
+                       placeholder={`e.g. ${b.type === 'mcq' ? 'Choose the correct grammar:' : b.type === 'essay' ? 'Write a poem about winter:' : 'Upload a photo of your notebook:'}`} 
+                       value={b.text} onChange={e => setBlockField(bIndex, 'text', e.target.value)} 
+                       style={{ width: '100%', marginBottom: '10px', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }} 
+                       required rows={b.type === 'essay' ? 3 : 2}
+                     />
+                     
+                     {/* MCQ specific options */}
+                     {b.type === 'mcq' && (
+                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                          {b.options.map((opt, oIndex) => (
+                             <div key={oIndex} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: b.correctIndex === oIndex ? '#e0e7ff' : 'transparent', padding: '4px', borderRadius: '8px' }}>
+                               <input type="radio" name={`correct-${b.id}`} checked={b.correctIndex === oIndex} onChange={() => setBlockField(bIndex, 'correctIndex', oIndex)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                               <input type="text" value={opt} onChange={e => setOptionText(bIndex, oIndex, e.target.value)} placeholder={`Option ${oIndex + 1}`} style={{ padding: '8px', fontSize: '0.9rem', flex: 1 }} required />
+                             </div>
+                          ))}
+                       </div>
+                     )}
+
                    </div>
                  ))}
-                 {questions.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1rem' }}>No questions added yet. Click &quot;+ Add Question&quot; to begin.</div>}
+                 {blocks.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '2rem', border: '2px dashed var(--border-light)', borderRadius: '12px' }}>Start building your assignment by adding blocks above.</div>}
               </div>
+
             </div>
 
-            <button type="submit" className="btn-primary" disabled={isSubmitting || questions.length === 0} style={{ marginTop: '1rem', padding: '16px', fontSize: '1.1rem' }}>
-              {isSubmitting ? 'Publishing Task...' : 'Publish Assessment'}
+            <button type="submit" className="btn-primary" disabled={isSubmitting || blocks.length === 0} style={{ marginTop: '1rem', padding: '16px', fontSize: '1.1rem' }}>
+              {isSubmitting ? 'Publishing Task...' : 'Publish Form'}
             </button>
           </form>
         </div>
@@ -153,20 +211,38 @@ export default function AdminTasksManager() {
              <p style={{ color: 'var(--text-muted)' }}>No tasks have been created yet.</p>
           ) : (
              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {tasks.map(t => (
-                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1.2rem', border: '1px solid var(--border-light)', borderRadius: '12px', background: '#f8fafc' }}>
-                    <div>
-                      <h4 style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '4px' }}>{t.title}</h4>
-                      <div style={{ display: 'flex', gap: '10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                         <span>{t.type}</span> • <span>{t.questions?.length || 0} Questions</span>
+                {tasks.map(t => {
+                  const isExpired = t.deadline && now > t.deadline;
+                  return (
+                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem', border: `1px solid ${isExpired ? '#fecaca' : 'var(--border-light)'}`, borderRadius: '12px', background: isExpired ? '#fef2f2' : '#f8fafc', position: 'relative' }}>
+                    
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '4px', textDecoration: isExpired ? 'line-through' : 'none' }}>{t.title}</h4>
+                      <div style={{ display: 'flex', gap: '10px', fontSize: '0.8rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                         <span style={{ fontWeight: '900', color: 'var(--text-main)', background: '#cbd5e1', padding: '2px 8px', borderRadius: '12px' }}>{t.blocks ? t.blocks.length : (t.questions?.length || 0)} Blocks</span>
+                         <span>•</span>
+                         <span>{t.type}</span>
+                         <span>•</span>
+                         {t.deadline ? (
+                           <span style={{ color: isExpired ? '#ef4444' : '#f59e0b', fontWeight: 'bold' }}>
+                              <i className="ti ti-clock"></i> Due: {new Date(t.deadline).toLocaleDateString()}
+                           </span>
+                         ) : <span>Forever</span>}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem' }}>+{t.rewardPoints} Pts</div>
-                      <div style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.9rem' }}>+{t.rewardExp} EXP</div>
+
+                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <div>
+                        <div style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem' }}>+{t.rewardPoints} Pts</div>
+                        <div style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.9rem' }}>+{t.rewardExp} EXP</div>
+                      </div>
+                      <button onClick={() => handleDeleteTask(t.id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer' }} title="Delete Task">
+                         <i className="ti ti-trash"></i>
+                      </button>
                     </div>
+
                   </div>
-                ))}
+                )})}
              </div>
           )}
         </div>

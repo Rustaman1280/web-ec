@@ -10,7 +10,8 @@ export default function AdminStudentManager() {
 
   // Quick Edit State
   const [editingUid, setEditingUid] = useState(null);
-  const [editPoints, setEditPoints] = useState('');
+  const [editPts, setEditPts] = useState('');
+  const [editExp, setEditExp] = useState('');
 
   // Add Student State
   const [showAddForm, setShowAddForm] = useState(false);
@@ -64,20 +65,21 @@ export default function AdminStudentManager() {
     setRegistering(false);
   };
 
-  const startEditing = (uid, currentPts) => {
+  const startEditing = (uid, currentPts, currentExp) => {
     setEditingUid(uid);
-    setEditPoints(currentPts || 0);
+    setEditPts(currentPts || 0);
+    setEditExp(currentExp || 0);
   };
 
-  const handleSavePoints = async (uid) => {
-    if (isNaN(editPoints)) return;
+  const handleSaveData = async (uid) => {
+    if (isNaN(editPts) || isNaN(editExp)) return;
     try {
-      await update(ref(database, `users/${uid}`), { points: parseInt(editPoints) });
+      await update(ref(database, `users/${uid}`), { points: parseInt(editPts), exp: parseInt(editExp) });
       setEditingUid(null);
       await fetchStudents();
     } catch(err) {
       console.error(err);
-      alert("Failed to update points.");
+      alert("Failed to update economy data.");
     }
   };
 
@@ -156,24 +158,30 @@ export default function AdminStudentManager() {
                    
                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{stu.email}</td>
                    
-                   <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--accent)' }}>{stu.exp || 0}</td>
+                   <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--accent)' }}>
+                     {editingUid === stu.uid ? (
+                       <input type="number" value={editExp} onChange={e => setEditExp(e.target.value)} style={{ width: '80px', padding: '6px', borderRadius: '6px' }} />
+                     ) : (
+                       stu.exp || 0
+                     )}
+                   </td>
                    
                    <td style={{ padding: '1rem' }}>
                      {editingUid === stu.uid ? (
                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                          <input 
                            type="number" 
-                           value={editPoints} 
-                           onChange={(e) => setEditPoints(e.target.value)} 
+                           value={editPts} 
+                           onChange={(e) => setEditPts(e.target.value)} 
                            style={{ width: '80px', padding: '6px', borderRadius: '6px' }}
                          />
-                         <button onClick={() => handleSavePoints(stu.uid)} style={{ background: '#10b981', color: 'white', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✓</button>
+                         <button onClick={() => handleSaveData(stu.uid)} style={{ background: '#10b981', color: 'white', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✓</button>
                          <button onClick={() => setEditingUid(null)} style={{ background: '#f1f5f9', color: '#64748b', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>✕</button>
                        </div>
                      ) : (
                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '900', color: 'var(--primary)' }}>
                          {stu.points || 0} Pts
-                         <i className="ti ti-pencil" onClick={() => startEditing(stu.uid, stu.points)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }}></i>
+                         <i className="ti ti-pencil" onClick={() => startEditing(stu.uid, stu.points, stu.exp)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }} title="Edit Points & EXP"></i>
                        </div>
                      )}
                    </td>
