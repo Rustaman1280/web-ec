@@ -14,6 +14,7 @@ export default function AdminSidebar() {
     { name: 'Task Manager', path: '/admin/tasks', icon: 'ti-clipboard-list' },
     { name: 'Student Management', path: '/admin/students', icon: 'ti-users' },
     { name: 'Attendance', path: '/admin/attendance', icon: 'ti-calendar-check' },
+    { name: 'Member of Month', path: '/admin/motm', icon: 'ti-award' },
   ];
 
   return (
