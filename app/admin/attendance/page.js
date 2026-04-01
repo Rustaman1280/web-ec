@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, get } from 'firebase/database';
@@ -41,7 +42,7 @@ export default function AdminAttendance() {
 
   const togglePresence = async (uid) => {
      if(!isWednesday) {
-        alert("Pilih hari Rabu untuk mengisi absensi!");
+        toast.error("Pilih hari Rabu untuk mengisi absensi!");
         return;
      }
 
@@ -58,7 +59,7 @@ export default function AdminAttendance() {
           });
        }
      } catch(err) {
-       alert(err.message);
+       toast.error(err.message);
      }
   };
 

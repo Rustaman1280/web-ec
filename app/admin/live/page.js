@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createQuizSession, getAllLiveQuizzes, createLiveQuizBank, deleteLiveQuizBank } from '@/lib/firebaseUtils';
@@ -72,13 +73,13 @@ export default function AdminLiveQuizzes() {
 
   const handleCreateBank = async (e) => {
     e.preventDefault();
-    if (questions.length === 0) return alert("Add at least 1 question.");
+    if (questions.length === 0) return toast.error("Add at least 1 question.");
     
     // Validate empty fields
     for (let i = 0; i < questions.length; i++) {
-        if(!questions[i].text) return alert(`Question ${i+1} missing text.`);
+        if(!questions[i].text) return toast.error(`Question ${i+1} missing text.`);
         for(let j=0; j<4; j++) {
-          if(!questions[i].options[j]) return alert(`Question ${i+1} missing Option ${j+1}.`);
+          if(!questions[i].options[j]) return toast.error(`Question ${i+1} missing Option ${j+1}.`);
         }
     }
 

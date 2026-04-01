@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -29,11 +30,11 @@ export default function ProfilePage() {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passData.new !== passData.confirm) {
-      alert("New passwords do not match!");
+      toast.error("New passwords do not match!");
       return;
     }
     if (passData.new.length < 6) {
-      alert("New password must be at least 6 characters.");
+      toast.error("New password must be at least 6 characters.");
       return;
     }
 
@@ -41,12 +42,12 @@ export default function ProfilePage() {
     try {
       const { changeUserPassword } = await import('@/lib/authUtils');
       await changeUserPassword(passData.current, passData.new);
-      alert("Password changed successfully!");
+      toast.success("Password changed successfully!");
       setShowPassModal(false);
       setPassData({ current: '', new: '', confirm: '' });
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to change password. Make sure your current password is correct.");
+      toast.error(err.message || "Failed to change password. Make sure your current password is correct.");
     }
     setPassLoading(false);
   };
@@ -61,10 +62,10 @@ export default function ProfilePage() {
     setNickLoading(true);
     const success = await changeNickname(currentUser.uid, newNick, 50);
     if(success) {
-      alert("Nickname changed successfully!");
+      toast.success("Nickname changed successfully!");
       setIsEditingNick(false);
     } else {
-      alert("Not enough Points! This costs 50 Pts.");
+      toast.error("Not enough Points! This costs 50 Pts.");
     }
     setNickLoading(false);
   };
@@ -74,9 +75,9 @@ export default function ProfilePage() {
     const gain = pts * 5;
     const success = await convertPointsToExp(currentUser.uid, pts, gain);
     if(success) {
-      alert(`Successfully converted ${pts} Points into ${gain} EXP!`);
+      toast.success(`Successfully converted ${pts} Points into ${gain} EXP!`);
     } else {
-      alert(`Not enough Points! You need at least ${pts} Pts to exchange.`);
+      toast.error(`Not enough Points! You need at least ${pts} Pts to exchange.`);
     }
     setExpConverting(false);
   };
@@ -87,7 +88,7 @@ export default function ProfilePage() {
     
     // Check if they have enough balance (Cost 100)
     if((profile.points || 0) < 100) {
-      alert("Changing your avatar costs 100 Pts! You don't have enough Points.");
+      toast("Changing your avatar costs 100 Pts! You don't have enough Points.");
       return;
     }
 
@@ -97,7 +98,7 @@ export default function ProfilePage() {
       const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
       
       if (!cloudName || !uploadPreset) {
-        alert("Admin needs to configure Cloudinary environment variables!");
+        toast.error("Admin needs to configure Cloudinary environment variables!");
         setUploading(false);
         return;
       }
@@ -132,10 +133,10 @@ export default function ProfilePage() {
       const { recordTransaction } = await import('@/lib/economyUtils');
       await recordTransaction(currentUser.uid, 'shop_purchase', 'Custom Avatar / Photo', -100, 0);
 
-      alert('Avatar successfully updated!');
+      toast.success('Avatar successfully updated!');
     } catch(err) {
       console.error(err);
-      alert(err.message || 'Failed to upload photo.');
+      toast.error(err.message || 'Failed to upload photo.');
     }
     setUploading(false);
   };

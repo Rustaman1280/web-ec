@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -91,7 +92,7 @@ export default function StudentDashboard() {
                <button className="btn-primary anim-pop" style={{ padding: '8px 16px', borderRadius: '20px', fontSize: '0.85rem' }} onClick={async () => {
                  const res = await recordDailyClaim(currentUser.uid);
                  if (res && res.success) {
-                   alert(`Daily bonus claimed! +${res.rewardAmt} Pts & +${res.rewardAmt} EXP 🎉`);
+                   toast.success(`Daily bonus claimed! +${res.rewardAmt} Pts & +${res.rewardAmt} EXP 🎉`);
                    window.location.reload();
                  }
                }}>

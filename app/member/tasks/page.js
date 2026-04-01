@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getAllTasks, getUserCompletedTasks, claimTaskReward } from '@/lib/economyUtils';
@@ -35,7 +36,7 @@ export default function TasksPage() {
        // Refresh local state to show it completed
        setCompletedTaskIds(prev => [...prev, taskId]);
     } else {
-       alert("Error claiming task. Maybe you already claimed it?");
+       toast.error("Error claiming task. Maybe you already claimed it?");
     }
     setClaimingId(null);
   };

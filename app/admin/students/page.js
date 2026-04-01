@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, get, update } from 'firebase/database';
@@ -117,7 +118,7 @@ export default function AdminStudentManager() {
       await fetchStudents();
     } catch(err) {
       console.error(err);
-      alert("Failed to update economy data.");
+      toast.error("Failed to update economy data.");
     }
   };
 
@@ -125,8 +126,8 @@ export default function AdminStudentManager() {
     e.preventDefault();
     const pts = parseInt(bonusPts) || 0;
     const exp = parseInt(bonusExp) || 0;
-    if (pts === 0 && exp === 0) return alert("Please enter at least some Points or EXP to give.");
-    if (!bonusDesc.trim()) return alert("Please enter a reason for the bonus.");
+    if (pts === 0 && exp === 0) return toast.error("Please enter at least some Points or EXP to give.");
+    if (!bonusDesc.trim()) return toast.error("Please enter a reason for the bonus.");
 
     setSubmittingBonus(true);
     try {
@@ -135,7 +136,7 @@ export default function AdminStudentManager() {
           exp: (currentExp || 0) + exp
        });
        await recordTransaction(uid, 'offline_bonus', bonusDesc, pts, exp);
-       alert("Bonus points added successfully!");
+       toast.success("Bonus points added successfully!");
        
        // Reset form and refresh
        setBonusPts('50');
@@ -147,7 +148,7 @@ export default function AdminStudentManager() {
        toggleExpandStudent(uid); 
     } catch (err) {
        console.error(err);
-       alert("Failed to give bonus.");
+       toast.error("Failed to give bonus.");
     }
     setSubmittingBonus(false);
   };

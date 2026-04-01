@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -71,15 +72,15 @@ export default function AdminTasksManager() {
     e.preventDefault();
     if(!title) return;
     
-    if (blocks.length === 0) return alert("Please add at least 1 block to this assignment.");
+    if (blocks.length === 0) return toast.error("Please add at least 1 block to this assignment.");
     
     // Basic validation
     for (let i = 0; i < blocks.length; i++) {
        const b = blocks[i];
-       if (!b.text.trim()) return alert(`Block ${i+1} is missing instructions/text.`);
+       if (!b.text.trim()) return toast.error(`Block ${i+1} is missing instructions/text.`);
        if (b.type === 'mcq') {
          for(let j=0; j<4; j++) {
-           if(!b.options[j].trim()) return alert(`Block ${i+1} is missing Option ${j+1}.`);
+           if(!b.options[j].trim()) return toast.error(`Block ${i+1} is missing Option ${j+1}.`);
          }
        }
     }

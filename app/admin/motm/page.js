@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, get, set } from 'firebase/database';
@@ -56,8 +57,8 @@ export default function MotmAdminPage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!selectedUid) return alert("Please select a student.");
-    if (!quote.trim()) return alert("Please enter a quote or reason.");
+    if (!selectedUid) return toast.error("Please select a student.");
+    if (!quote.trim()) return toast.error("Please enter a quote or reason.");
     
     setSaving(true);
     try {
@@ -74,11 +75,11 @@ export default function MotmAdminPage() {
         };
         await set(ref(database, 'config/motm'), motmData);
         
-        alert("Member of the Month updated successfully!");
+        toast.success("Member of the Month updated successfully!");
         fetchData();
     } catch(err) {
         console.error("Failed to set MOTM:", err);
-        alert("Failed to save. Check console for details.");
+        toast.error("Failed to save. Check console for details.");
     }
     setSaving(false);
   };
@@ -89,11 +90,11 @@ export default function MotmAdminPage() {
     setSaving(true);
     try {
         await set(ref(database, 'config/motm'), null);
-        alert("Removed successfully!");
+        toast.success("Removed successfully!");
         fetchData();
     } catch (err) {
         console.error(err);
-        alert("Failed to remove.");
+        toast.error("Failed to remove.");
     }
     setSaving(false);
   };

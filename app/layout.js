@@ -11,10 +11,15 @@ export const metadata = {
   description: "Interactive real-time quiz for the English Club",
 };
 
+import { Toaster } from 'react-hot-toast';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${plusJakartaSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff', borderRadius: '12px' } }} />
+        {children}
+      </body>
     </html>
   );
 }

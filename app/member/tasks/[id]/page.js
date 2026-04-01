@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,9 +62,9 @@ export default function AssessmentPage() {
     for (let i = 0; i < blocks.length; i++) {
        const b = blocks[i];
        const type = b.type || 'mcq';
-       if (type === 'mcq' && mcqAnswers[i] === undefined) return alert(`Please answer Multiple Choice Question ${i+1}`);
-       if (type === 'essay' && (!essayTexts[i] || essayTexts[i].trim().length < 10)) return alert(`Text for Block ${i+1} is too short or missing.`);
-       if (type === 'photo' && !photoFiles[i]) return alert(`Please select an image for Block ${i+1}.`);
+       if (type === 'mcq' && mcqAnswers[i] === undefined) return toast.error(`Please answer Multiple Choice Question ${i+1}`);
+       if (type === 'essay' && (!essayTexts[i] || essayTexts[i].trim().length < 10)) return toast.error(`Text for Block ${i+1} is too short or missing.`);
+       if (type === 'photo' && !photoFiles[i]) return toast.error(`Please select an image for Block ${i+1}.`);
     }
 
     setSubmitting(true);
@@ -106,7 +107,7 @@ export default function AssessmentPage() {
          if(!res.ok) throw new Error(`Upload failed for Block ${parseInt(bIdx) + 1}`);
       }
     } catch(err) {
-      alert(err.message);
+      toast.error(err.message);
       setSubmitting(false);
       return;
     }
