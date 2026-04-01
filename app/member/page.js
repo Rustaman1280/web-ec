@@ -36,14 +36,34 @@ export default function StudentDashboard() {
     );
   }
 
+  const getGreetingName = () => {
+     if (!profile) return 'Student';
+     // Jika Admin sudah memilih Nickname kustom yang berbeda dari FullName
+     if (profile.nickname && profile.nickname !== profile.fullName) {
+        return profile.nickname; // Tampilkan Nickname seutuhnya
+     }
+     
+     // Jika masih default (Nickname == FullName)
+     const nameParts = (profile.fullName || 'Student').split(' ');
+     const firstWord = nameParts[0].toLowerCase();
+     
+     // Jika kata pertama adalah nama umum, ambil kata kedua (jika ada)
+     if (nameParts.length > 1 && (firstWord === 'muhammad' || firstWord === 'm.' || firstWord === 'mohammad' || firstWord === 'mochammad')) {
+        return nameParts[1];
+     }
+     
+     // Jika tidak, ambil kata pertamanya saja
+     return nameParts[0];
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       {/* Profile Header */}
       <div className="glass-panel" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Hi, <span className="text-gradient">{profile.nickname || profile.fullName || 'Student'}</span></h2>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Student Account</div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Hi, <span className="text-gradient">{getGreetingName()}</span></h2>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>{profile.fullName || 'Student Account'}</div>
         </div>
         
         {/* Avatar Profile */}

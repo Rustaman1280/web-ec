@@ -25,7 +25,17 @@ export default function MemberActiveQuiz() {
       if (!currentUser || !authProfile) {
         router.push('/auth/login');
       } else {
-        setProfile({ name: authProfile.name, id: currentUser.uid });
+        let displayName = authProfile.nickname;
+        if (!displayName || displayName === authProfile.fullName) {
+            const nameParts = (authProfile.fullName || 'Student').split(' ');
+            const firstWord = nameParts[0].toLowerCase();
+            if (nameParts.length > 1 && (firstWord === 'muhammad' || firstWord === 'm.' || firstWord === 'mohammad' || firstWord === 'mochammad')) {
+                displayName = nameParts[1];
+            } else {
+                displayName = nameParts[0];
+            }
+        }
+        setProfile({ name: displayName, id: currentUser.uid });
       }
     }
   }, [currentUser, authProfile, authLoading, router]);

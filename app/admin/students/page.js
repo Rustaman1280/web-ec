@@ -12,15 +12,23 @@ export default function AdminStudentManager() {
   const [editingUid, setEditingUid] = useState(null);
   const [editPts, setEditPts] = useState('');
   const [editExp, setEditExp] = useState('');
+  const [editNick, setEditNick] = useState('');
 
   const [expandedUid, setExpandedUid] = useState(null);
   const [userTxns, setUserTxns] = useState([]);
   const [userTasksRecord, setUserTasksRecord] = useState([]);
   const [loadingTxns, setLoadingTxns] = useState(false);
 
+  // Bonus Form State
+  const [bonusPts, setBonusPts] = useState('50');
+  const [bonusExp, setBonusExp] = useState('50');
+  const [bonusDesc, setBonusDesc] = useState('Offline Activity / Keaktifan');
+  const [submittingBonus, setSubmittingBonus] = useState(false);
+
   // Add Student State
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newNick, setNewNick] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [registering, setRegistering] = useState(false);
@@ -58,9 +66,9 @@ export default function AdminStudentManager() {
     
     setRegistering(true);
     try {
-      await registerStudentWithoutLogin(newName, newEmail, newPassword);
+      await registerStudentWithoutLogin(newName, newEmail, newPassword, newNick);
       setRegSuccess(`Successfully registered ${newName}!`);
-      setNewName(''); setNewEmail(''); setNewPassword('');
+      setNewName(''); setNewEmail(''); setNewPassword(''); setNewNick('');
       setShowAddForm(false);
       await fetchStudents(); // Refresh table
     } catch(err) {
@@ -70,10 +78,11 @@ export default function AdminStudentManager() {
     setRegistering(false);
   };
 
-  const startEditing = (uid, currentPts, currentExp) => {
+  const startEditing = (uid, currentPts, currentExp, currentNick) => {
     setEditingUid(uid);
     setEditPts(currentPts || 0);
     setEditExp(currentExp || 0);
+    setEditNick(currentNick || '');
   };
 
   const toggleExpandStudent = async (uid) => {
@@ -100,7 +109,7 @@ export default function AdminStudentManager() {
     try {
       const diffPts = parseInt(editPts) - (oldPts || 0);
       const diffExp = parseInt(editExp) - (oldExp || 0);
-      await update(ref(database, `users/${uid}`), { points: parseInt(editPts), exp: parseInt(editExp) });
+      await update(ref(database, `users/${uid}`), { points: parseInt(editPts), exp: parseInt(editExp), nickname: editNick });
       if (diffPts !== 0 || diffExp !== 0) {
          await recordTransaction(uid, 'admin_override', 'Admin adjustment', diffPts, diffExp);
       }
@@ -110,6 +119,37 @@ export default function AdminStudentManager() {
       console.error(err);
       alert("Failed to update economy data.");
     }
+  };
+
+  const handleGiveBonus = async (e, uid, currentPts, currentExp) => {
+    e.preventDefault();
+    const pts = parseInt(bonusPts) || 0;
+    const exp = parseInt(bonusExp) || 0;
+    if (pts === 0 && exp === 0) return alert("Please enter at least some Points or EXP to give.");
+    if (!bonusDesc.trim()) return alert("Please enter a reason for the bonus.");
+
+    setSubmittingBonus(true);
+    try {
+       await update(ref(database, `users/${uid}`), {
+          points: (currentPts || 0) + pts,
+          exp: (currentExp || 0) + exp
+       });
+       await recordTransaction(uid, 'offline_bonus', bonusDesc, pts, exp);
+       alert("Bonus points added successfully!");
+       
+       // Reset form and refresh
+       setBonusPts('50');
+       setBonusExp('50');
+       setBonusDesc('Offline Activity / Keaktifan');
+       
+       await fetchStudents();
+       toggleExpandStudent(uid); // Refresh ledger
+       toggleExpandStudent(uid); 
+    } catch (err) {
+       console.error(err);
+       alert("Failed to give bonus.");
+    }
+    setSubmittingBonus(false);
   };
 
   return (
@@ -133,10 +173,14 @@ export default function AdminStudentManager() {
             {regError && <div style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 'bold' }}>{regError}</div>}
             {regSuccess && <div style={{ color: '#10b981', marginBottom: '1rem', fontWeight: 'bold' }}>{regSuccess}</div>}
             
-            <form onSubmit={handleRegister} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto', gap: '1rem', alignItems: 'end' }}>
+            <form onSubmit={handleRegister} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto', gap: '1rem', alignItems: 'end' }}>
                <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Full Name</label>
                   <input type="text" value={newName} onChange={e => setNewName(e.target.value)} required placeholder="John Doe" />
+               </div>
+               <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Greeting Name</label>
+                  <input type="text" value={newNick} onChange={e => setNewNick(e.target.value)} placeholder="e.g. John" />
                </div>
                <div>
                   <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Email</label>
@@ -184,9 +228,13 @@ export default function AdminStudentManager() {
                        }}>
                          {!stu.photoUrl && (stu.nickname || stu.fullName || '?').charAt(0).toUpperCase()}
                        </div>
-                       <div>
+                       <div style={{ flex: 1 }}>
                          <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{stu.fullName}</div>
-                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{stu.nickname && stu.nickname !== stu.fullName ? `AKA ${stu.nickname}` : 'No Custom Nickname'}</div>
+                         {editingUid === stu.uid ? (
+                            <input type="text" value={editNick} onChange={e => setEditNick(e.target.value)} placeholder="Greeting Name" style={{ width: '100%', padding: '4px', fontSize: '0.8rem', borderRadius: '4px' }} />
+                         ) : (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{stu.nickname && stu.nickname !== stu.fullName ? `AKA ${stu.nickname}` : 'No Custom Nickname'}</div>
+                         )}
                        </div>
                      </td>
                      
@@ -215,7 +263,7 @@ export default function AdminStudentManager() {
                        ) : (
                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '900', color: 'var(--primary)' }}>
                            {stu.points || 0} Pts
-                           <i className="ti ti-pencil" onClick={() => startEditing(stu.uid, stu.points, stu.exp)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }} title="Edit Points & EXP"></i>
+                           <i className="ti ti-pencil" onClick={() => startEditing(stu.uid, stu.points, stu.exp, stu.nickname || stu.fullName)} style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', background: 'var(--bg-dark)', borderRadius: '4px' }} title="Edit Name & Pts"></i>
                          </div>
                        )}
                      </td>
@@ -223,6 +271,31 @@ export default function AdminStudentManager() {
                    {expandedUid === stu.uid && (
                      <tr style={{ background: 'var(--bg-dark)' }}>
                         <td colSpan="4" style={{ padding: '2rem' }}>
+                           
+                           {/* Quick Actions (Give Bonus) */}
+                           <div style={{ marginBottom: '2rem', background: 'var(--bg-glass)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                              <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                 <i className="ti ti-star"></i> Give Bonus (Offline Activity)
+                              </h4>
+                              <form onSubmit={(e) => handleGiveBonus(e, stu.uid, stu.points, stu.exp)} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                                 <div style={{ flex: '1 1 120px' }}>
+                                    <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '5px' }}>Points Added</label>
+                                    <input type="number" value={bonusPts} onChange={e => setBonusPts(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }} />
+                                 </div>
+                                 <div style={{ flex: '1 1 120px' }}>
+                                    <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '5px' }}>EXP Added</label>
+                                    <input type="number" value={bonusExp} onChange={e => setBonusExp(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }} />
+                                 </div>
+                                 <div style={{ flex: '2 1 200px' }}>
+                                    <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '5px' }}>Reason / Description</label>
+                                    <input type="text" value={bonusDesc} onChange={e => setBonusDesc(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }} />
+                                 </div>
+                                 <button type="submit" disabled={submittingBonus} style={{ padding: '10px 24px', background: 'var(--primary)', color: 'white', fontWeight: 'bold', border: 'none', borderRadius: '8px', cursor: submittingBonus ? 'wait' : 'pointer' }}>
+                                    {submittingBonus ? '...' : '+ Give'}
+                                 </button>
+                              </form>
+                           </div>
+
                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '2rem' }}>
                                
                                {/* Task Results */}

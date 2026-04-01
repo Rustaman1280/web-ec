@@ -128,6 +128,10 @@ export default function ProfilePage() {
         points: profile.points - 100,
         photoUrl: secureUrl
       });
+      
+      const { recordTransaction } = await import('@/lib/economyUtils');
+      await recordTransaction(currentUser.uid, 'shop_purchase', 'Custom Avatar / Photo', -100, 0);
+
       alert('Avatar successfully updated!');
     } catch(err) {
       console.error(err);
