@@ -32,6 +32,7 @@ export default function LeaderboardPage() {
              photoUrl: data[uid].photoUrl || null,
              exp: data[uid].exp || 0,
              badges: data[uid].badges || {},
+             hideStats: data[uid].hideStats || false,
              isCurrentUser: uid === profile?.uid
            }))
            .sort((a,b) => b.exp - a.exp);
@@ -195,7 +196,7 @@ export default function LeaderboardPage() {
               {leaderboard.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No players yet.</div>
               ) : (
-                leaderboard.slice(0, 5).map((user, idx) => (
+                leaderboard.filter(u => !u.hideStats).slice(0, 5).map((user, idx) => (
                   <div key={user.uid} className="glass-panel" style={{ 
                     padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     background: user.uid === profile.uid ? 'rgba(79, 70, 229, 0.05)' : 'var(--bg-surface)',

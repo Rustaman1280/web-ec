@@ -35,14 +35,14 @@ export default function MemberTopbar() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(251, 191, 36, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>
                <i className="ti ti-coin" style={{ color: '#fbbf24', fontSize: '1.1rem' }}></i>
-               <span style={{ fontWeight: '900', color: '#fbbf24', fontSize: '0.9rem' }}>{profile?.points || 0}</span>
+               <span style={{ fontWeight: '900', color: '#fbbf24', fontSize: '0.9rem' }}>{profile?.hideStats ? '???' : (profile?.points || 0)}</span>
             </div>
          </div>
 
          {/* Right Side: EXP */}
          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(99, 102, 241, 0.1)', padding: '4px 12px', borderRadius: '20px' }}>
             <i className="ti ti-star" style={{ color: 'var(--accent)', fontSize: '1.1rem' }}></i>
-            <span style={{ fontWeight: '900', color: 'var(--accent)', fontSize: '0.9rem' }}>{profile?.exp || 0} EXP</span>
+            <span style={{ fontWeight: '900', color: 'var(--accent)', fontSize: '0.9rem' }}>{profile?.hideStats ? '???' : (profile?.exp || 0)} EXP</span>
          </div>
       </header>
   );
