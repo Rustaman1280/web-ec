@@ -93,7 +93,10 @@ export default function StudentDashboard() {
                  const res = await recordDailyClaim(currentUser.uid);
                  if (res && res.success) {
                    toast.success(`Daily bonus claimed! +${res.rewardAmt} Pts & +${res.rewardAmt} EXP 🎉`);
-                   window.location.reload();
+                   // Update streak UI locally without refreshing
+                   getDailyStreakData(currentUser.uid).then(updated => {
+                      setStreakData(updated);
+                   });
                  }
                }}>
                  Klaim Bonus

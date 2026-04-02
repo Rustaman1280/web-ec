@@ -8,6 +8,7 @@ export default function PointHistory() {
   const { currentUser, profile } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -55,43 +56,69 @@ export default function PointHistory() {
             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No transactions found.</div>
          ) : (
              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {transactions.map((txn, i) => (
+                {transactions.map((txn, i) => {
+                  const isExpanded = expandedId === txn.id;
+                  return (
                   <div key={txn.id} style={{ 
                     display: 'grid', 
                     gridTemplateColumns: '70px 1fr 65px 65px', 
                     gap: '0.75rem', 
                     padding: '1rem', 
                     borderBottom: i < transactions.length - 1 ? '1px solid var(--border-light)' : 'none', 
-                    alignItems: 'center' 
+                    alignItems: isExpanded ? 'flex-start' : 'center' 
                   }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: '1.2' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: '1.2', paddingTop: isExpanded ? '4px' : '0' }}>
                       {new Date(txn.timestamp).toLocaleDateString([], { day: '2-digit', month: '2-digit' })} <br/>
                       <span style={{ fontWeight: 'bold' }}>{new Date(txn.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ 
-                        fontWeight: 'bold', 
-                        color: 'var(--text-main)', 
-                        fontSize: '0.9rem', 
-                        marginBottom: '2px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }} title={txn.title}>
-                        {txn.title}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                        <div style={{ 
+                          fontWeight: 'bold', 
+                          color: 'var(--text-main)', 
+                          fontSize: '0.9rem', 
+                          marginBottom: '4px',
+                          whiteSpace: isExpanded ? 'normal' : 'nowrap',
+                          overflow: isExpanded ? 'visible' : 'hidden',
+                          textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                          wordBreak: 'break-word',
+                          lineHeight: '1.4'
+                        }}>
+                          {txn.title}
+                        </div>
+                        
+                        {txn.title.length > 25 && (
+                          <button 
+                            onClick={() => setExpandedId(isExpanded ? null : txn.id)}
+                            style={{
+                              background: isExpanded ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
+                              border: 'none',
+                              borderRadius: '8px',
+                              color: 'var(--primary)', 
+                              cursor: 'pointer',
+                              padding: '4px', 
+                              display: 'flex', 
+                              alignItems: 'center',
+                              flexShrink: 0
+                            }}
+                            title="Tampilkan Detail"
+                          >
+                            <i className={`ti ${isExpanded ? 'ti-chevron-up' : 'ti-info-circle'}`} style={{ fontSize: '1.2rem' }}></i>
+                          </button>
+                        )}
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', background: 'var(--bg-surface)', padding: '2px 6px', borderRadius: '8px', display: 'inline-block' }}>
                         {txn.type.replace('_', ' ')}
                       </div>
                     </div>
-                    <div style={{ fontWeight: '900', fontSize: '0.9rem', color: (txn.pointChange || 0) >= 0 ? '#10b981' : '#ef4444', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontWeight: '900', fontSize: '0.9rem', color: (txn.pointChange || 0) >= 0 ? '#10b981' : '#ef4444', textAlign: 'right', whiteSpace: 'nowrap', paddingTop: isExpanded ? '4px' : '0' }}>
                       {(txn.pointChange || 0) > 0 ? '+' : ''}{txn.pointChange || 0} P
                     </div>
-                    <div style={{ fontWeight: '900', fontSize: '0.9rem', color: (txn.expChange || 0) >= 0 ? 'var(--accent)' : '#ef4444', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontWeight: '900', fontSize: '0.9rem', color: (txn.expChange || 0) >= 0 ? 'var(--accent)' : '#ef4444', textAlign: 'right', whiteSpace: 'nowrap', paddingTop: isExpanded ? '4px' : '0' }}>
                       {(txn.expChange || 0) > 0 ? '+' : ''}{txn.expChange || 0} E
                     </div>
                   </div>
-                ))}
+                )})}
              </div>
          )}
       </div>
