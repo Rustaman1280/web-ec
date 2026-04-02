@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, get, set } from 'firebase/database';
+import { awardBadge } from '@/lib/economyUtils';
 
 export default function MotmAdminPage() {
   const [students, setStudents] = useState([]);
@@ -74,6 +75,9 @@ export default function MotmAdminPage() {
             photoUrl: selectedStudent.photoUrl || ''
         };
         await set(ref(database, 'config/motm'), motmData);
+        
+        // Award the MOTM badge + 100 Pts / 100 EXP automatically
+        await awardBadge(selectedUid, 'motm', 'Member of the Month', 'ti-star', 100, 100);
         
         toast.success("Member of the Month updated successfully!");
         fetchData();

@@ -55,7 +55,9 @@ export default function AdminProjectorView() {
   }
 
   const handleStart = async () => {
-    if(audioRef.current) audioRef.current.play(); // Force play if blocked earlier
+    if(audioRef.current) {
+       audioRef.current.play().catch(e => console.warn("Audio play issue:", e));
+    }
     await updateSessionState(pin, { status: 'active', currentQuestionIndex: 0 });
   };
 
@@ -81,11 +83,12 @@ export default function AdminProjectorView() {
   return (
     <div style={{ padding: '2rem 5rem', textAlign: 'center', overflow: 'hidden' }}>
       
-      {/* Background Music Loop - Royalty free upbeat music */}
+      {/* Background Music Loop - Add your own local file to /public/music.mp3 to avoid NotSupportedError from hotlinking */}
       <audio 
         ref={audioRef}
-        src="https://cdn.pixabay.com/download/audio/2022/10/16/audio_03d9202111.mp3" 
+        src="/music.mp3" 
         loop 
+        muted // Muted by default to avoid issues if file is missing
       />
 
       {/* Global Projector CSS Animations */}

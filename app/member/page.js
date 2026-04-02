@@ -212,10 +212,10 @@ export default function StudentDashboard() {
            <i className="ti ti-medal" style={{ fontSize: '2.5rem', color: '#fbbf24' }}></i>
            <div style={{ fontWeight: 'bold' }}>Leaderboards</div>
         </button>
-        <button className="glass-panel" style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+        <Link href="/member/badges" className="glass-panel" style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit' }}>
            <i className="ti ti-award" style={{ fontSize: '2.5rem', color: '#10b981' }}></i>
            <div style={{ fontWeight: 'bold' }}>Badges</div>
-        </button>
+        </Link>
       </div>
 
     </div>

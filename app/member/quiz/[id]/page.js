@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { subscribeToSession, joinSession, submitAnswer } from '@/lib/firebaseUtils';
 
@@ -40,33 +40,42 @@ export default function MemberActiveQuiz() {
     }
   }, [currentUser, authProfile, authLoading, router]);
 
+  const hasJoinedRef = useRef(false);
+
   useEffect(() => {
     if(!profile || !pin) return;
     
+    let isSubscribed = true;
+
     // Join logic
     const attemptJoin = async () => {
+       if (hasJoinedRef.current) return;
+       hasJoinedRef.current = true;
+       
        const success = await joinSession(pin, profile);
        if(!success) {
-          setError("Failed to join. Invalid PIN or session already started.");
+          if (isSubscribed) setError("Failed to join. Invalid PIN or session already started.");
        } else {
-          setJoined(true);
+          if (isSubscribed) setJoined(true);
        }
     };
     attemptJoin();
     
     // Subscribe to state
     const unsubscribe = subscribeToSession(pin, (data) => {
+       if (!isSubscribed) return;
        if(!data) {
          setError("Session ended by admin.");
          setSession(null);
          return;
        }
        setSession(data);
-       // Reset hasAnswered if currentQuestionIndex changed (we track this via local state vs remote to be simple, but usually remote is safer)
-       // Let's do it simply by checking changes to index
     });
     
-    return () => unsubscribe();
+    return () => {
+       isSubscribed = false;
+       unsubscribe();
+    };
   }, [profile, pin]);
   
   // Update answered state strictly when question index changes

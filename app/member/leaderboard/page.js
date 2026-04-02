@@ -31,6 +31,7 @@ export default function LeaderboardPage() {
              fullName: data[uid].fullName || data[uid].name || 'Student',
              photoUrl: data[uid].photoUrl || null,
              exp: data[uid].exp || 0,
+             badges: data[uid].badges || {},
              isCurrentUser: uid === profile?.uid
            }))
            .sort((a,b) => b.exp - a.exp);
@@ -143,9 +144,30 @@ export default function LeaderboardPage() {
                     )}
                   </div>
                   
-                  <div style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
-                     Member
-                  </div>
+                  {Object.keys(user.badges || {}).length > 0 ? (
+                     <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                        {Object.keys(user.badges).slice(0, 3).map(bId => {
+                           const b = user.badges[bId];
+                           // Special styling for MOTM
+                           if(bId === 'motm') {
+                              return (
+                                <div key={bId} title={b.name} style={{ background: 'var(--gradient-primary)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', color: 'white', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 5px rgba(99, 102, 241, 0.3)' }}>
+                                   <i className={`ti ${b.icon || 'ti-star'}`}></i> {b.name}
+                                </div>
+                              )
+                           }
+                           return (
+                              <div key={bId} title={b.name} style={{ background: '#fef3c7', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', color: '#d97706', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                 <i className={`ti ${b.icon || 'ti-medal'}`}></i> {b.name}
+                              </div>
+                           )
+                        })}
+                     </div>
+                  ) : (
+                     <div style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
+                        Member
+                     </div>
+                  )}
 
                 </div>
               ))
