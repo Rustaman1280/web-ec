@@ -27,7 +27,7 @@ export default function AdminProjectorView() {
 
   // Audio Playback handling for different stages
   useEffect(() => {
-    if(!audioRef.current || !session) return;
+    if(!audioRef.current || !session || !session.bgMusic || session.bgMusic === 'none') return;
     const audio = audioRef.current;
     
     // Play audio when session starts or if waiting
@@ -44,7 +44,6 @@ export default function AdminProjectorView() {
        // Pause or slow down
        audio.playbackRate = 0.8;
        if (session.status === 'finished') {
-         // Optionally change track, but let's just fade it out
          setTimeout(() => { if(audio) audio.pause() }, 5000);
        }
     }
@@ -55,7 +54,7 @@ export default function AdminProjectorView() {
   }
 
   const handleStart = async () => {
-    if(audioRef.current) {
+    if(audioRef.current && session.bgMusic && session.bgMusic !== 'none') {
        audioRef.current.play().catch(e => console.warn("Audio play issue:", e));
     }
     await updateSessionState(pin, { status: 'active', currentQuestionIndex: 0 });
@@ -80,18 +79,44 @@ export default function AdminProjectorView() {
   
   const participants = Object.values(session.participants || {}).sort((a,b) => b.score - a.score);
 
-  return (
-    <div style={{ padding: '2rem 5rem', textAlign: 'center', overflow: 'hidden' }}>
-      
-      {/* Background Music Loop - Add your own local file to /public/music.mp3 to avoid NotSupportedError from hotlinking */}
-      <audio 
-        ref={audioRef}
-        src="/music.mp3" 
-        loop 
-        muted // Muted by default to avoid issues if file is missing
-      />
+  const getActiveBackgroundStyles = (theme) => {
+     if(!theme) return { background: '#f8f9fa' };
+     const themeBackgrounds = {
+        default: '#f8f9fa',
+        purple: 'linear-gradient(135deg, #4b1b85, #791a88)',
+        space: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)',
+        sunny: 'linear-gradient(135deg, #f6d365, #fda085)',
+        ocean: 'linear-gradient(135deg, #2b5876, #4e4376)'
+     };
+     let bg = themeBackgrounds[theme];
+     if (theme.startsWith('url')) bg = theme;
+     if (!bg) bg = '#f8f9fa';
 
-      {/* Global Projector CSS Animations */}
+     if(bg.startsWith('url')) {
+        return { background: `${bg} center/cover no-repeat` };
+     }
+     return { background: bg };
+  };
+
+  const musicPlaybackOptions = {
+     none: '',
+     lobby1: '/music/lobby1.mp3',
+     lobby2: '/music/lobby2.mp3',
+     lobby3: '/music/lobby3.mp3'
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', padding: '2rem 5rem', textAlign: 'center', overflow: 'hidden', ...getActiveBackgroundStyles(session.bgTheme) }}>
+      
+      {session.bgMusic && session.bgMusic !== 'none' && (
+         <audio 
+           ref={audioRef}
+           src={musicPlaybackOptions[session.bgMusic] || ''} 
+           loop 
+         />
+      )}
+
+      {/* Global Projector CSS Animations text colors */}
       <style dangerouslySetInnerHTML={{__html: `
          @keyframes float { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-15px) rotate(2deg); } 100% { transform: translateY(0px) rotate(0deg); } }
          @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
@@ -102,23 +127,26 @@ export default function AdminProjectorView() {
          .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
          .anim-slide-up { animation: slideUp 0.6s ease-out forwards; }
          .anim-glow { animation: glowing 2s infinite; }
+         
+         .text-theme { color: ${session.bgTheme && session.bgTheme !== 'default' ? '#fff' : 'inherit'}; text-shadow: ${session.bgTheme && session.bgTheme !== 'default' ? '0 2px 4px rgba(0,0,0,0.5)' : 'none'} }
       `}} />
 
       {session.status === 'waiting' && (
         <div style={{ marginTop: '5vh' }} className="anim-slide-up">
-          <h2 className="heading-xl" style={{ fontSize: '3rem' }}>Join the game at <span style={{ color: 'var(--primary)' }}>ecquiz.com</span></h2>
-          <div style={{ fontSize: '2rem', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>Enter the Game PIN below:</div>
+          <h2 className="heading-xl text-theme" style={{ fontSize: '3rem' }}>Join the game at <span style={{ color: 'var(--primary)', textShadow: '0 2px 4px rgba(255,255,255,0.7)' }}>ecquiz.com</span></h2>
+          <div className="text-theme" style={{ fontSize: '2rem', marginBottom: '1.5rem', opacity: 0.9 }}>Enter the Game PIN below:</div>
           
           <div className="anim-float anim-glow" style={{ 
             fontSize: '8rem', fontWeight: '900', letterSpacing: '15px', 
             background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             borderRadius: '24px', padding: '1rem 3rem', display: 'inline-block',
-            border: '4px solid var(--primary)', boxShadow: '0 8px 32px rgba(79, 70, 229, 0.4)'
+            border: '4px solid var(--primary)', boxShadow: '0 8px 32px rgba(79, 70, 229, 0.4)',
+            backgroundColor: 'rgba(255,255,255,0.9)'
           }}>
             {pin}
           </div>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '3rem auto', maxWidth: '800px', padding: '2rem', background: 'var(--bg-glass)', borderRadius: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '3rem auto', maxWidth: '800px', padding: '2rem', background: 'var(--bg-glass)', borderRadius: '24px', backdropFilter: 'blur(10px)', color: 'var(--text-main)' }}>
             <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
               <i className="ti ti-users" style={{ color: 'var(--primary)', marginRight: '10px' }}></i>
               Players joined: <span style={{ fontSize: '2.5rem', color: 'var(--accent)' }}>{participants.length}</span>
@@ -131,22 +159,22 @@ export default function AdminProjectorView() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '3rem', justifyContent: 'center' }}>
             {participants.map((p, i) => (
               <div key={i} className="anim-pop" style={{ 
-                padding: '1rem 2rem', background: '#e0e7ff', color: '#3730a3',
+                padding: '1rem 2rem', background: 'rgba(224, 231, 255, 0.9)', color: '#3730a3',
                 borderRadius: '50px', fontSize: '1.5rem', fontWeight: 'bold', border: '2px solid #a5b4fc',
-                animationDelay: `${i * 0.1}s`
+                animationDelay: `${i * 0.1}s`, backdropFilter: 'blur(5px)'
               }}>
                 {p.name}
               </div>
             ))}
-            {participants.length === 0 && <div className="anim-pop" style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Waiting for players...</div>}
+            {participants.length === 0 && <div className="anim-pop text-theme" style={{ fontSize: '1.5rem', opacity: 0.8 }}>Waiting for players...</div>}
           </div>
         </div>
       )}
 
       {session.status === 'active' && (
-        <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', height: '80vh' }}>
+        <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', height: '85vh' }}>
           
-          <div style={{ background: 'var(--bg-glass)', padding: '2rem', borderRadius: '24px', marginBottom: '2rem', borderBottom: '6px solid var(--primary)' }}>
+          <div style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(15px)', padding: '2rem', borderRadius: '24px', marginBottom: '2rem', borderBottom: '6px solid var(--primary)', color: 'var(--text-main)' }}>
              <div style={{ fontSize: '1.2rem', fontWeight: '900', color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '2px' }}>
                 Question {session.currentQuestionIndex + 1} of {session.questions.length}
              </div>
@@ -155,6 +183,10 @@ export default function AdminProjectorView() {
              </h2>
           </div>
           
+          {session.questions[session.currentQuestionIndex].mediaUrl && (
+             <div style={{ flex: 1, minHeight: '150px', background: `url(${session.questions[session.currentQuestionIndex].mediaUrl}) center/contain no-repeat`, marginBottom: '2rem', borderRadius: '16px' }}></div>
+          )}
+
           <div style={{ 
             display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', 
             marginTop: 'auto', marginBottom: '2rem' 
@@ -162,7 +194,8 @@ export default function AdminProjectorView() {
              {session.questions[session.currentQuestionIndex].options.map((opt, i) => (
                 <div key={i} className="anim-pop" style={{ 
                   background: ['#e11d48', '#2563eb', '#d97706', '#16a34a'][i],
-                  padding: '2.5rem', borderRadius: '16px', fontSize: '2.3rem', fontWeight: 'bold', color: 'white',
+                  padding: session.questions[session.currentQuestionIndex].mediaUrl ? '1.5rem' : '2.5rem', 
+                  borderRadius: '16px', fontSize: session.questions[session.currentQuestionIndex].mediaUrl ? '1.8rem' : '2.3rem', fontWeight: 'bold', color: 'white',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   animationDelay: `${i * 0.1}s`
                 }}>
@@ -181,13 +214,13 @@ export default function AdminProjectorView() {
 
       {session.status === 'leaderboard' && (
         <div className="anim-slide-up" style={{ marginTop: '2vh' }}>
-          <h2 className="heading-xl" style={{ fontSize: '3.5rem' }}>Top Players</h2>
+          <h2 className="heading-xl text-theme" style={{ fontSize: '3.5rem' }}>Top Players</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '900px', margin: '3rem auto' }}>
             {participants.slice(0, 5).map((p, i) => (
               <div key={i} className="anim-pop" style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '1.5rem 3rem', background: i === 0 ? 'var(--gradient-primary)' : 'var(--bg-glass)', color: i === 0 ? 'white' : 'inherit',
-                borderRadius: '16px', fontSize: '2.2rem', fontWeight: 'bold', border: i === 0 ? 'none' : '2px solid var(--border-light)',
+                padding: '1.5rem 3rem', background: i === 0 ? 'var(--gradient-primary)' : 'var(--bg-glass)', color: i === 0 ? 'white' : 'var(--text-main)',
+                borderRadius: '16px', fontSize: '2.2rem', fontWeight: 'bold', border: i === 0 ? 'none' : '2px solid var(--border-light)', backdropFilter: 'blur(10px)',
                 animationDelay: `${i * 0.1}s`, transform: i===0 ? 'scale(1.05)' : 'none'
               }}>
                 <div style={{ display: 'flex', gap: '2rem' }}>
@@ -209,16 +242,16 @@ export default function AdminProjectorView() {
 
       {session.status === 'finished' && (
         <div className="anim-slide-up" style={{ marginTop: '10vh' }}>
-           <h2 className="heading-xl" style={{ fontSize: '4rem', marginBottom: '2rem' }}>
-              <span className="text-gradient">Final Podium</span>
+           <h2 className="heading-xl text-theme" style={{ fontSize: '4rem', marginBottom: '2rem', textShadow: '0 4px 10px rgba(255,255,255,0.5)' }}>
+              Final Podium
            </h2>
            
            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2rem', height: '400px', marginTop: '4rem' }}>
               {/* 2nd Place */}
               {participants[1] && (
                  <div className="anim-slide-up" style={{ width: '220px', height: '60%', background: 'linear-gradient(145deg, #e2e8f0, #94a3b8)', borderRadius: '16px 16px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.4s' }}>
-                    <div className="anim-pop" style={{ position: 'absolute', top: '-60px', fontSize: '2.5rem', fontWeight: 'bold', animationDelay: '1.2s' }}>{participants[1].name}</div>
-                    <div style={{ position: 'absolute', top: '-100px', fontSize: '1.5rem', fontWeight: 'bold', background: 'var(--bg-dark)', padding: '4px 12px', borderRadius: '12px' }}>{participants[1].score}</div>
+                    <div className="anim-pop text-theme" style={{ position: 'absolute', top: '-60px', fontSize: '2.5rem', fontWeight: 'bold', animationDelay: '1.2s' }}>{participants[1].name}</div>
+                    <div style={{ position: 'absolute', top: '-100px', fontSize: '1.5rem', fontWeight: 'bold', background: 'var(--bg-dark)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '12px' }}>{participants[1].score}</div>
                     <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '5rem', fontWeight: '900', color: 'white', opacity: 0.7 }}>2</div>
                  </div>
               )}
@@ -226,16 +259,16 @@ export default function AdminProjectorView() {
               {participants[0] && (
                  <div className="anim-slide-up" style={{ width: '250px', height: '85%', background: 'linear-gradient(145deg, #fef08a, #eab308)', borderRadius: '16px 16px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', boxShadow: '0 -10px 40px rgba(234, 179, 8, 0.4)', animationDelay: '0.8s' }}>
                     <i className="ti ti-crown anim-pop" style={{ position: 'absolute', top: '-120px', fontSize: '4rem', color: '#eab308', animationDelay: '1.8s' }}></i>
-                    <div className="anim-pop" style={{ position: 'absolute', top: '-70px', fontSize: '3rem', fontWeight: '900', animationDelay: '1.8s' }}>{participants[0].name}</div>
-                    <div style={{ position: 'absolute', top: '-150px', fontSize: '1.8rem', fontWeight: 'bold', background: 'var(--bg-dark)', padding: '4px 12px', borderRadius: '12px' }}>{participants[0].score}</div>
+                    <div className="anim-pop text-theme" style={{ position: 'absolute', top: '-70px', fontSize: '3rem', fontWeight: '900', animationDelay: '1.8s' }}>{participants[0].name}</div>
+                    <div style={{ position: 'absolute', top: '-150px', fontSize: '1.8rem', fontWeight: 'bold', background: 'var(--bg-dark)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '12px' }}>{participants[0].score}</div>
                     <div style={{ marginTop: 'auto', marginBottom: '3rem', fontSize: '7rem', fontWeight: '900', color: 'white', opacity: 0.8 }}>1</div>
                  </div>
               )}
               {/* 3rd Place */}
               {participants[2] && (
                  <div className="anim-slide-up" style={{ width: '220px', height: '40%', background: 'linear-gradient(145deg, #fdb17c, #c2410c)', borderRadius: '16px 16px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.2s' }}>
-                    <div className="anim-pop" style={{ position: 'absolute', top: '-60px', fontSize: '2.5rem', fontWeight: 'bold', animationDelay: '1.0s' }}>{participants[2].name}</div>
-                    <div style={{ position: 'absolute', top: '-100px', fontSize: '1.5rem', fontWeight: 'bold', background: 'var(--bg-dark)', padding: '4px 12px', borderRadius: '12px' }}>{participants[2].score}</div>
+                    <div className="anim-pop text-theme" style={{ position: 'absolute', top: '-60px', fontSize: '2.5rem', fontWeight: 'bold', animationDelay: '1.0s' }}>{participants[2].name}</div>
+                    <div style={{ position: 'absolute', top: '-100px', fontSize: '1.5rem', fontWeight: 'bold', background: 'var(--bg-dark)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '12px' }}>{participants[2].score}</div>
                     <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '4rem', fontWeight: '900', color: 'white', opacity: 0.7 }}>3</div>
                  </div>
               )}
