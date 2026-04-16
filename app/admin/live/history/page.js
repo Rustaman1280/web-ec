@@ -88,10 +88,16 @@ export default function AdminQuizHistory() {
                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: badge.bg, color: badge.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 'bold', flexShrink: 0 }}>
                                   {badge.emoji}
                                </div>
-                               <div style={{ minWidth: 0 }}>
+                               <div style={{ minWidth: 0, flex: 1 }}>
                                   <div style={{ fontWeight: 'bold', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>{p.score} pts</div>
                                </div>
+                               {p.correctCount !== undefined && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', fontWeight: 'bold', borderLeft: '1px solid var(--border-light)', paddingLeft: '10px' }}>
+                                     <span style={{ color: '#10b981' }}><i className="ti ti-check"></i> {p.correctCount}</span>
+                                     <span style={{ color: '#ef4444' }}><i className="ti ti-x"></i> {p.wrongCount}</span>
+                                  </div>
+                               )}
                             </div>
                          );
                       })}

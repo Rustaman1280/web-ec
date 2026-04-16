@@ -285,6 +285,21 @@ export default function MemberActiveQuiz() {
           </div>
         )}
 
+        {session.status === 'reading' && (
+           <div className="anim-slide-up" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', textAlign: 'center', padding: '0 20px' }}>
+              <div style={{ background: 'white', padding: '25px 20px', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)', width: '100%', maxWidth: '500px' }}>
+                 <i className="ti ti-book-2 anim-pulse" style={{ fontSize: '4rem', color: '#6366f1', marginBottom: '10px' }}></i>
+                 <h2 style={{ color: 'black', fontSize: '2rem', fontWeight: '900', margin: '0 0 10px 0' }}>Get Ready!</h2>
+                 <p style={{ color: '#475569', fontSize: '1.1rem', fontWeight: 'bold', margin: '0 0 20px 0' }}>Read the question on the screen</p>
+                 <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
+                    <h3 style={{ color: '#1e293b', fontSize: '1.3rem', fontWeight: 'bold', margin: 0, lineHeight: '1.4' }}>
+                      {session.questions?.[session.currentQuestionIndex]?.text}
+                    </h3>
+                 </div>
+              </div>
+           </div>
+        )}
+
         {session.status === 'active' && !hasAnswered && activeQ && (
           <div style={{ position: 'fixed', inset: 0, padding: '75px 8px 65px 8px' }}>
              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '8px', height: '100%' }}>
@@ -395,7 +410,41 @@ export default function MemberActiveQuiz() {
                   <p style={{ margin: '5px 0 0 0', fontSize: '3.5rem', fontWeight: '900', color: 'var(--accent)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{score}</p>
                </div>
 
-               <button className="btn-primary anim-pop" onClick={() => router.push('/member')} style={{ padding: '15px 40px', borderRadius: '30px', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.3)', animationDelay: '1.5s', marginTop: '1rem', border: '2px solid white' }}>
+               {/* Analytics Breakdown */}
+               <div className="anim-slide-up" style={{ width: '100%', maxWidth: '600px', margin: '0 auto', background: 'rgba(255,255,255,0.95)', color: '#333', borderRadius: '16px', padding: '20px', animationDelay: '1.2s', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+                  <h3 style={{ margin: '0 0 15px 0', fontSize: '1.4rem', fontWeight: 'bold', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>Your Answers</h3>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '20px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                       <div style={{ fontSize: '2rem', fontWeight: '900', color: '#10b981' }}>{session.participants?.[profile.id]?.correctCount || 0}</div>
+                       <div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 'bold' }}>Correct</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                       <div style={{ fontSize: '2rem', fontWeight: '900', color: '#ef4444' }}>{session.participants?.[profile.id]?.wrongCount || 0}</div>
+                       <div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 'bold' }}>Wrong</div>
+                    </div>
+                  </div>
+
+                  <div style={{ maxHeight: '30vh', overflowY: 'auto', textAlign: 'left', paddingRight: '10px' }}>
+                     {session.questions?.map((q, idx) => {
+                        const ah = session.participants?.[profile.id]?.answersHistory?.[idx];
+                        if (!ah) return null;
+                        return (
+                          <div key={idx} style={{ padding: '12px', marginBottom: '10px', background: ah.isCorrect ? '#ecfdf5' : '#fef2f2', borderLeft: `4px solid ${ah.isCorrect ? '#10b981' : '#ef4444'}`, borderRadius: '0 8px 8px 0' }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>Question {idx + 1}</span>
+                                <span style={{ fontWeight: 'bold', fontSize: '1rem', color: ah.isCorrect ? '#10b981' : '#ef4444' }}>
+                                   {ah.isCorrect ? `+${ah.pointsEarned}` : '0'} pts
+                                </span>
+                             </div>
+                             <div style={{ fontSize: '1.1rem', fontWeight: '700', lineHeight: '1.3' }}>{q.text}</div>
+                          </div>
+                        )
+                     })}
+                  </div>
+               </div>
+
+               <button className="btn-primary anim-pop" onClick={() => router.push('/member')} style={{ padding: '15px 40px', borderRadius: '30px', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.3)', animationDelay: '1.5s', marginTop: '1.5rem', border: '2px solid white' }}>
                   Return Home
                </button>
              </div>

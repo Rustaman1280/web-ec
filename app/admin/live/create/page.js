@@ -38,7 +38,7 @@ function KahootQuizBuilder() {
   
   // Questions State
   const [questions, setQuestions] = useState([
-    { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, rewardPoints: 50, rewardExp: 10, mediaUrl: '', isDoublePoints: false }
+    { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, readingTime: 5, rewardPoints: 50, rewardExp: 10, mediaUrl: '', isDoublePoints: false }
   ]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,7 +130,7 @@ function KahootQuizBuilder() {
 
   // Actions
   const handleAddQuestion = () => {
-    const newQ = { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, rewardPoints: 50, rewardExp: 10, mediaUrl: '', isDoublePoints: false };
+    const newQ = { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, readingTime: 5, rewardPoints: 50, rewardExp: 10, mediaUrl: '', isDoublePoints: false };
     setQuestions([...questions, newQ]);
     setActiveIndex(questions.length);
   };
@@ -442,6 +442,21 @@ function KahootQuizBuilder() {
                       <option value="30">30 seconds</option>
                       <option value="60">1 minute</option>
                       <option value="120">2 minutes</option>
+                   </select>
+                </div>
+
+                <div style={{ marginBottom: '18px' }}>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', marginBottom: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                      <i className="ti ti-eye" style={{ color: '#10b981' }}></i> Reading time
+                   </label>
+                   <select 
+                      value={activeQ.readingTime || 5} 
+                      onChange={(e) => updateActiveQ('readingTime', parseInt(e.target.value))}
+                      style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #334155', borderRadius: '8px', outline: 'none', background: '#1e293b', color: 'white' }}>
+                      <option value="3">3 seconds</option>
+                      <option value="5">5 seconds</option>
+                      <option value="10">10 seconds</option>
+                      <option value="15">15 seconds</option>
                    </select>
                 </div>
 

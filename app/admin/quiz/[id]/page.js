@@ -163,6 +163,28 @@ export default function AdminProjectorView() {
 
   const [showNewRanks, setShowNewRanks] = useState(false);
   const [cutscene, setCutscene] = useState(0); // 0-5 cinematic scenes
+  const [readingTimer, setReadingTimer] = useState(0);
+
+  useEffect(() => {
+     let interval;
+     if (session?.status === 'reading') {
+        const activeQ = session.questions[session.currentQuestionIndex];
+        const rt = activeQ.readingTime || 5;
+        setReadingTimer(rt);
+        
+        interval = setInterval(() => {
+           setReadingTimer(prev => {
+              if (prev <= 1) {
+                 clearInterval(interval);
+                 updateSessionState(pin, { status: 'active' });
+                 return 0;
+              }
+              return prev - 1;
+           });
+        }, 1000);
+     }
+     return () => clearInterval(interval);
+  }, [session?.status, session?.currentQuestionIndex, pin, session?.questions]);
 
   const fireConfetti = useCallback(() => {
      const count = 200;
@@ -228,7 +250,7 @@ export default function AdminProjectorView() {
        setShowDPCutscene(true);
        setTimeout(async () => {
           setShowDPCutscene(false);
-          const updates = { status: 'active', currentQuestionIndex: 0 };
+          const updates = { status: 'reading', currentQuestionIndex: 0 };
           if (session.participants) {
             Object.keys(session.participants).forEach(uid => {
                updates[`participants/${uid}/hasAnswered`] = false;
@@ -237,7 +259,7 @@ export default function AdminProjectorView() {
           await updateSessionState(pin, updates);
        }, 3500);
     } else {
-       const updates = { status: 'active', currentQuestionIndex: 0 };
+       const updates = { status: 'reading', currentQuestionIndex: 0 };
        if (session.participants) {
          Object.keys(session.participants).forEach(uid => {
             updates[`participants/${uid}/hasAnswered`] = false;
@@ -261,7 +283,7 @@ export default function AdminProjectorView() {
          setShowDPCutscene(true);
          setTimeout(async () => {
             setShowDPCutscene(false);
-            const updates = { status: 'active', currentQuestionIndex: nextIdx };
+            const updates = { status: 'reading', currentQuestionIndex: nextIdx };
             if (session.participants) {
               Object.keys(session.participants).forEach(uid => {
                  updates[`participants/${uid}/hasAnswered`] = false;
@@ -270,7 +292,7 @@ export default function AdminProjectorView() {
             await updateSessionState(pin, updates);
          }, 3500);
       } else {
-         const updates = { status: 'active', currentQuestionIndex: nextIdx };
+         const updates = { status: 'reading', currentQuestionIndex: nextIdx };
          if (session.participants) {
            Object.keys(session.participants).forEach(uid => {
               updates[`participants/${uid}/hasAnswered`] = false;
@@ -337,7 +359,7 @@ export default function AdminProjectorView() {
      <svg viewBox="0 0 32 32" fill="white" style={{ width: '40px', height: '40px' }}><rect x="6" y="6" width="20" height="20"/></svg> // Square
   ];
 
-  const activeQuestion = session.status === 'active' ? session.questions[session.currentQuestionIndex] : null;
+  const activeQuestion = (session.status === 'active' || session.status === 'reading') ? session.questions[session.currentQuestionIndex] : null;
   return (
     <div style={{ minHeight: '100vh', padding: '2rem 5rem', textAlign: 'center', overflow: 'hidden', ...getActiveBackgroundStyles(session.bgTheme) }}>
       
@@ -499,6 +521,36 @@ export default function AdminProjectorView() {
               </div>
             ))}
             {participants.length === 0 && <div className="anim-pop text-theme" style={{ fontSize: '1.5rem', opacity: 0.8 }}>Waiting for players...</div>}
+          </div>
+        </div>
+      )}
+
+      {session.status === 'reading' && activeQuestion && (
+        <div className="anim-pop" style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', ...getActiveBackgroundStyles(session.bgTheme) }}>
+          <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
+             <div style={{ background: 'white', padding: '15px 40px', borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', maxWidth: '60vw', zIndex: 10, position: 'relative' }}>
+                {activeQuestion.isDoublePoints && (
+                    <div style={{ position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '4px 20px', borderRadius: '20px', fontSize: '1rem', fontWeight: '900', letterSpacing: '2px', boxShadow: '0 4px 15px rgba(245,158,11,0.5)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                       ⚡ DOUBLE POINTS ⚡
+                    </div>
+                )}
+                <h2 style={{ color: 'black', fontSize: '2.5rem', fontWeight: '900', margin: 0, textAlign: 'center' }}>
+                  {activeQuestion.text}
+                </h2>
+             </div>
+          </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 40px', minHeight: 0, position: 'relative' }}>
+             <div style={{ position: 'absolute', left: '40px', width: '150px', height: '150px', background: '#3b2575', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.4)', border: '8px solid rgba(255,255,255,0.2)' }}>
+                <span style={{ fontSize: '1rem', fontWeight: 'bold', opacity: 0.8, marginBottom: '-5px' }}>READING</span>
+                <span style={{ fontSize: '4.5rem', fontWeight: '900', lineHeight: 1 }}>{readingTimer}</span>
+             </div>
+             {activeQuestion.mediaUrl ? (
+                <img src={activeQuestion.mediaUrl} alt="Media" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', background: 'white', padding: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }} />
+             ) : (
+                <div style={{ width: '50vw', height: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                   <i className="ti ti-book-2" style={{ fontSize: '8rem', color: 'rgba(255,255,255,0.4)' }}></i>
+                </div>
+             )}
           </div>
         </div>
       )}

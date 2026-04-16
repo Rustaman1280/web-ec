@@ -99,10 +99,18 @@ export default function MemberQuizHistory() {
                           <span><i className="ti ti-list-numbers"></i> {h.totalQuestions} questions</span>
                        </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                       <div style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--primary)' }}>{h.myScore}</div>
-                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>
-                          {h.myRank <= 3 ? `#${h.myRank} of ${h.totalParticipants}` : `${h.totalParticipants} players`}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', textAlign: 'right' }}>
+                       {(h.myCorrectCount !== undefined) && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                             <span style={{ color: '#10b981' }}><i className="ti ti-check"></i> {h.myCorrectCount}</span>
+                             <span style={{ color: '#ef4444' }}><i className="ti ti-x"></i> {h.myWrongCount}</span>
+                          </div>
+                       )}
+                       <div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--primary)' }}>{h.myScore}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>
+                             {h.myRank <= 3 ? `#${h.myRank} of ${h.totalParticipants}` : `${h.totalParticipants} players`}
+                          </div>
                        </div>
                     </div>
                  </div>
