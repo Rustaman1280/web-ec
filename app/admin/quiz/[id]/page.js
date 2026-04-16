@@ -161,16 +161,12 @@ export default function AdminProjectorView() {
   }, [session?.status, answeredCount, totalParticipants]);
 
   const [showNewRanks, setShowNewRanks] = useState(false);
-  const [podiumStep, setPodiumStep] = useState(0);
-  const confettiCanvasRef = useRef(null);
+  const [cutscene, setCutscene] = useState(0); // 0-5 cinematic scenes
 
   const fireConfetti = useCallback(() => {
-     // Big burst from both sides
      const count = 200;
-     const defaults = { origin: { y: 0.7 }, zIndex: 200 };
-     function fire(particleRatio, opts) {
-        confetti({ ...defaults, particleCount: Math.floor(count * particleRatio), ...opts });
-     }
+     const defaults = { origin: { y: 0.7 }, zIndex: 9999 };
+     function fire(pr, opts) { confetti({ ...defaults, particleCount: Math.floor(count * pr), ...opts }); }
      fire(0.25, { spread: 26, startVelocity: 55 });
      fire(0.2, { spread: 60 });
      fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
@@ -179,15 +175,18 @@ export default function AdminProjectorView() {
   }, []);
 
   const fireFireworks = useCallback(() => {
-     const duration = 5000;
+     const duration = 8000;
      const animEnd = Date.now() + duration;
      const interval = setInterval(() => {
-        const timeLeft = animEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
-        const particleCount = 50 * (timeLeft / duration);
-        confetti({ particleCount, startVelocity: 30, spread: 360, origin: { x: Math.random(), y: Math.random() * 0.4 }, zIndex: 200, colors: ['#fbbf24', '#ec4899', '#3b82f6', '#10b981', '#a855f7', '#ef4444'] });
+        const tl = animEnd - Date.now();
+        if (tl <= 0) return clearInterval(interval);
+        confetti({ particleCount: Math.floor(50 * (tl / duration)), startVelocity: 30, spread: 360, origin: { x: Math.random(), y: Math.random() * 0.4 }, zIndex: 9999, colors: ['#fbbf24','#ec4899','#3b82f6','#10b981','#a855f7','#ef4444'] });
      }, 250);
      return interval;
+  }, []);
+
+  const fireSideConfetti = useCallback((side, colors) => {
+     confetti({ particleCount: 80, spread: 70, origin: { x: side, y: 0.6 }, colors, zIndex: 9999, startVelocity: 45 });
   }, []);
 
   useEffect(() => {
@@ -197,15 +196,23 @@ export default function AdminProjectorView() {
         return () => clearTimeout(timer);
      }
      if (session?.status === 'finished') {
-        setPodiumStep(0);
-        const t1 = setTimeout(() => { setPodiumStep(1); confetti({ particleCount: 40, spread: 50, origin: { x: 0.75, y: 0.6 }, colors: ['#c2410c','#fdb17c','#fed7aa'], zIndex: 200 }); }, 2500);
-        const t2 = setTimeout(() => { setPodiumStep(2); confetti({ particleCount: 60, spread: 60, origin: { x: 0.25, y: 0.5 }, colors: ['#94a3b8','#cbd5e1','#e2e8f0'], zIndex: 200 }); }, 6000);
-        const t3 = setTimeout(() => { setPodiumStep(3); fireConfetti(); }, 10000);
-        let fireworksInterval;
-        const t4 = setTimeout(() => { fireworksInterval = fireFireworks(); }, 11000);
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); if(fireworksInterval) clearInterval(fireworksInterval); };
+        setCutscene(0);
+        // Scene 0 (0-3s): Blackout + "THE RESULTS ARE IN"
+        // Scene 1 (3-6s): Podiums rise from darkness
+        const s1 = setTimeout(() => setCutscene(1), 3000);
+        // Scene 2 (6-9.5s): 3rd place reveal + bronze confetti
+        const s2 = setTimeout(() => { setCutscene(2); fireSideConfetti(0.78, ['#c2410c','#fdb17c','#fed7aa']); }, 6000);
+        // Scene 3 (9.5-13.5s): 2nd place reveal + silver confetti
+        const s3 = setTimeout(() => { setCutscene(3); fireSideConfetti(0.22, ['#94a3b8','#cbd5e1','#e2e8f0']); }, 9500);
+        // Scene 4 (13.5-17s): Dramatic blackout + "AND YOUR CHAMPION IS..."
+        const s4 = setTimeout(() => setCutscene(4), 13500);
+        // Scene 5 (17s+): 1st place GRAND reveal + fireworks
+        const s5 = setTimeout(() => { setCutscene(5); fireConfetti(); }, 17000);
+        let fwInterval;
+        const s6 = setTimeout(() => { fwInterval = fireFireworks(); }, 18000);
+        return () => { [s1,s2,s3,s4,s5,s6].forEach(clearTimeout); if(fwInterval) clearInterval(fwInterval); };
      }
-  }, [session?.status, fireConfetti, fireFireworks]);
+  }, [session?.status, fireConfetti, fireFireworks, fireSideConfetti]);
 
   if(!session) {
     return <div style={{ display: 'flex', height: '80vh', justifyContent: 'center', alignItems: 'center' }}><h2>Loading...</h2></div>;
@@ -514,164 +521,293 @@ export default function AdminProjectorView() {
       )}
 
       {session.status === 'finished' && (
-        <div className="anim-slide-up" style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 50% 100%, #1e3a8a 0%, #0f172a 60%, #030712 100%)', zIndex: 100, overflow: 'hidden' }}>
-           
-           {/* === SPOTLIGHT BEAMS === */}
-           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
-              {/* Left Spotlight */}
-              <div className="anim-spotlight" style={{ position: 'absolute', bottom: '0', left: '15%', width: '300px', height: '120vh', background: 'linear-gradient(0deg, rgba(234,179,8,0.15), transparent 70%)', transformOrigin: 'bottom center', filter: 'blur(15px)' }}></div>
-              {/* Right Spotlight */}
-              <div className="anim-spotlight2" style={{ position: 'absolute', bottom: '0', right: '15%', width: '300px', height: '120vh', background: 'linear-gradient(0deg, rgba(168,85,247,0.12), transparent 70%)', transformOrigin: 'bottom center', filter: 'blur(15px)' }}></div>
-              {/* Center Spotlight – activates with 1st place */}
-              {podiumStep >= 3 && (
-                 <div className="anim-pop" style={{ position: 'absolute', bottom: '0', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '130vh', background: 'linear-gradient(0deg, rgba(234,179,8,0.25), transparent 60%)', filter: 'blur(20px)' }}></div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, overflow: 'hidden' }}>
+
+           {/* ============================== */}
+           {/* SCENE 0: DRAMATIC BLACKOUT INTRO */}
+           {/* ============================== */}
+           <div style={{
+              position: 'absolute', inset: 0, zIndex: cutscene >= 1 ? 5 : 50,
+              background: '#000',
+              opacity: cutscene === 0 ? 1 : 0,
+              transition: 'opacity 1.5s ease-in-out',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              pointerEvents: cutscene >= 1 ? 'none' : 'auto'
+           }}>
+              <div style={{
+                 animation: 'cutsceneZoomIn 2.5s ease-out both',
+                 textAlign: 'center'
+              }}>
+                 <h1 style={{ fontSize: '5rem', fontWeight: '900', color: 'white', letterSpacing: '8px', textTransform: 'uppercase', margin: 0, textShadow: '0 0 40px rgba(255,255,255,0.3), 0 0 80px rgba(99,102,241,0.3)' }}>
+                    The Results Are In
+                 </h1>
+                 <div style={{ width: '200px', height: '3px', background: 'linear-gradient(90deg, transparent, #6366f1, transparent)', margin: '20px auto', animation: 'cutsceneLineExpand 1.5s ease-out 0.5s both' }}></div>
+              </div>
+              {/* Lens Flare */}
+              <div style={{ position: 'absolute', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)', animation: 'cutscenePulse 2s ease-in-out infinite', filter: 'blur(30px)' }}></div>
+           </div>
+
+           {/* ============================== */}
+           {/* SCENE 4: CHAMPION BLACKOUT SUSPENSE */}
+           {/* ============================== */}
+           <div style={{
+              position: 'absolute', inset: 0, zIndex: cutscene === 4 ? 60 : 2,
+              background: '#000',
+              opacity: cutscene === 4 ? 1 : 0,
+              transition: cutscene === 4 ? 'opacity 0.8s ease-in' : 'opacity 0.5s ease-out',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              pointerEvents: cutscene === 4 ? 'auto' : 'none'
+           }}>
+              {cutscene === 4 && (
+                 <>
+                    <div style={{ animation: 'cutsceneChampText 3s ease-in-out both', textAlign: 'center' }}>
+                       <p style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '10px', textTransform: 'uppercase', margin: 0, fontWeight: 'bold' }}>And Your</p>
+                       <h1 style={{ fontSize: '7rem', fontWeight: '900', margin: '10px 0', letterSpacing: '12px',
+                          background: 'linear-gradient(90deg, #fbbf24, #fef08a, #fbbf24)', backgroundSize: '200% auto',
+                          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                          animation: 'titleShimmer 2s linear infinite',
+                          textShadow: 'none', filter: 'drop-shadow(0 4px 20px rgba(234,179,8,0.5))'
+                       }}>CHAMPION</h1>
+                       <p style={{ fontSize: '2.5rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '10px', textTransform: 'uppercase', margin: 0, fontWeight: 'bold' }}>Is...</p>
+                    </div>
+                    {/* Dramatic pulsing ring */}
+                    <div style={{ position: 'absolute', width: '500px', height: '500px', borderRadius: '50%', border: '2px solid rgba(234,179,8,0.2)', animation: 'cutsceneRingPulse 1s ease-out infinite' }}></div>
+                    <div style={{ position: 'absolute', width: '350px', height: '350px', borderRadius: '50%', border: '1px solid rgba(234,179,8,0.15)', animation: 'cutsceneRingPulse 1.5s ease-out infinite 0.3s' }}></div>
+                 </>
               )}
            </div>
 
-           {/* === FLOATING PARTICLES === */}
-           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2, overflow: 'hidden' }}>
-              {[...Array(12)].map((_, i) => (
-                 <div key={i} className={i % 2 === 0 ? 'anim-particle1' : 'anim-particle2'} style={{
-                    position: 'absolute',
-                    bottom: '-20px',
-                    left: `${5 + (i * 8)}%`,
-                    width: `${4 + (i % 4) * 3}px`,
-                    height: `${4 + (i % 4) * 3}px`,
-                    borderRadius: i % 3 === 0 ? '50%' : i % 3 === 1 ? '2px' : '0',
-                    background: ['#fbbf24','#ec4899','#3b82f6','#10b981','#a855f7','#f97316'][i % 6],
-                    opacity: 0.6,
-                    animationDelay: `${i * 0.5}s`,
-                    animationDuration: `${3 + (i % 3)}s`,
-                    transform: i % 3 === 1 ? 'rotate(45deg)' : 'none',
+           {/* ============================== */}
+           {/* MAIN STAGE BACKGROUND */}
+           {/* ============================== */}
+           <div style={{
+              position: 'absolute', inset: 0, zIndex: 3,
+              background: cutscene >= 5 
+                 ? 'radial-gradient(ellipse at 50% 80%, #422006 0%, #1c1917 40%, #030712 100%)' 
+                 : 'radial-gradient(ellipse at 50% 100%, #1e3a8a 0%, #0f172a 60%, #030712 100%)',
+              transition: 'background 2s',
+              opacity: cutscene >= 1 && cutscene !== 4 ? 1 : 0,
+              transitionProperty: 'opacity, background',
+              transitionDuration: '1.5s, 2s',
+           }}></div>
+
+           {/* ============================== */}
+           {/* SPOTLIGHT BEAMS (visible from scene 1+) */}
+           {/* ============================== */}
+           {cutscene >= 1 && cutscene !== 4 && (
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 4 }}>
+                 {/* Left Spotlight - bronze for 3rd */}
+                 <div style={{
+                    position: 'absolute', bottom: 0, left: '18%', width: '250px', height: '130vh', transformOrigin: 'bottom center', filter: 'blur(20px)',
+                    background: cutscene >= 2 ? 'linear-gradient(0deg, rgba(194,65,12,0.25), transparent 60%)' : 'linear-gradient(0deg, rgba(255,255,255,0.05), transparent 60%)',
+                    opacity: cutscene >= 2 ? 1 : 0.3,
+                    transition: 'all 1.5s', animation: 'spotlightSweep 8s ease-in-out infinite'
                  }}></div>
-              ))}
-           </div>
+                 {/* Center Spotlight - gold for 1st */}
+                 <div style={{
+                    position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '400px', height: '140vh', filter: 'blur(25px)',
+                    background: cutscene >= 5 ? 'linear-gradient(0deg, rgba(234,179,8,0.35), transparent 50%)' : 'linear-gradient(0deg, rgba(255,255,255,0.03), transparent 50%)',
+                    opacity: cutscene >= 5 ? 1 : 0.2,
+                    transition: 'all 2s'
+                 }}></div>
+                 {/* Right Spotlight - silver for 2nd */}
+                 <div style={{
+                    position: 'absolute', bottom: 0, right: '18%', width: '250px', height: '130vh', transformOrigin: 'bottom center', filter: 'blur(20px)',
+                    background: cutscene >= 3 ? 'linear-gradient(0deg, rgba(148,163,184,0.2), transparent 60%)' : 'linear-gradient(0deg, rgba(255,255,255,0.05), transparent 60%)',
+                    opacity: cutscene >= 3 ? 1 : 0.3,
+                    transition: 'all 1.5s', animation: 'spotlightSweep2 7s ease-in-out infinite'
+                 }}></div>
+              </div>
+           )}
 
-           {/* === TWINKLING STARS === */}
-           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
-              {[...Array(8)].map((_, i) => (
-                 <div key={`star-${i}`} className="anim-star" style={{
-                    position: 'absolute',
-                    top: `${10 + (i * 10) % 60}%`,
-                    left: `${5 + (i * 13) % 90}%`,
-                    fontSize: `${0.6 + (i % 3) * 0.4}rem`,
-                    color: ['#fbbf24','#e2e8f0','#93c5fd','#c084fc'][i % 4],
-                    animationDelay: `${i * 0.7}s`,
-                    animationDuration: `${2 + (i % 2)}s`,
-                 }}>✦</div>
-              ))}
-           </div>
-
-           {/* === TITLE === */}
-           <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', paddingTop: '4vh' }}>
-              {podiumStep < 3 ? (
-                 <h2 className={`heading-xl anim-pop ${podiumStep === 0 ? 'anim-drumroll' : ''}`} style={{ fontSize: '4.5rem', marginBottom: '0', color: 'white', textShadow: '0 4px 20px rgba(0,0,0,0.8)', letterSpacing: '3px' }}>
-                    {podiumStep === 0 && 'And the winners are...'}
-                    {podiumStep === 1 && '3rd Place Revealed!'}
-                    {podiumStep === 2 && '2nd Place Revealed!'}
-                 </h2>
-              ) : (
-                 <h2 className="heading-xl anim-pop anim-title-shimmer" style={{ fontSize: '5rem', marginBottom: '0', letterSpacing: '5px', fontWeight: '900' }}>
-                    🏆 CHAMPION 🏆
-                 </h2>
-              )}
-              {podiumStep === 0 && (
-                 <p className="anim-slide-up" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.5rem', marginTop: '10px', fontWeight: 'bold', letterSpacing: '2px' }}>DRUM ROLL...</p>
-              )}
-           </div>
-           
-           {/* === PODIUM === */}
-           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2.5rem', height: '55vh', marginTop: '2rem', position: 'relative', zIndex: 10, paddingBottom: '4vh' }}>
-              
-              {/* 2nd Place */}
-              {participants[1] && (
-                 <div className="anim-slide-up" style={{ width: '240px', height: '55%', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.2s', overflow: 'visible',
-                    background: podiumStep >= 2 ? 'linear-gradient(175deg, #e2e8f0, #94a3b8)' : 'linear-gradient(175deg, #334155, #1e293b)',
-                    boxShadow: podiumStep >= 2 ? '0 0 40px rgba(148,163,184,0.4), inset 0 1px 0 rgba(255,255,255,0.3)' : '0 0 20px rgba(0,0,0,0.4)',
-                    borderTop: podiumStep >= 2 ? '3px solid rgba(255,255,255,0.5)' : '3px solid rgba(255,255,255,0.1)',
-                    transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                 }}>
-                    {podiumStep >= 2 ? (
-                       <>
-                          {/* Glow Ring */}
-                          <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-140px', width: '110px', height: '110px', borderRadius: '50%', border: '3px solid rgba(148,163,184,0.6)', background: 'radial-gradient(circle, rgba(148,163,184,0.15), transparent)' }}></div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '-130px', width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg, #64748b, #94a3b8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>🥈</div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '-35px', fontSize: '2.2rem', fontWeight: '900', color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)', animationDelay: '0.2s' }}>{participants[1].name}</div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '15px', fontSize: '1.2rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.4)', color: '#e2e8f0', padding: '4px 16px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.4s' }}>{participants[1].score} PTS</div>
-                       </>
-                    ) : (
-                       <div className={`${podiumStep >= 1 ? 'anim-drumroll' : ''}`} style={{ position: 'absolute', top: '-100px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <i className="ti ti-question-mark" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.3)' }}></i>
-                       </div>
-                    )}
-                    <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '5rem', fontWeight: '900', color: 'white', opacity: podiumStep >= 2 ? 0.8 : 0.15, transition: 'opacity 1s' }}>2</div>
+           {/* ============================== */}
+           {/* FLOATING PARTICLES & STARS */}
+           {/* ============================== */}
+           {cutscene >= 1 && cutscene !== 4 && (
+              <>
+                 <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5, overflow: 'hidden' }}>
+                    {[...Array(16)].map((_, i) => (
+                       <div key={`p-${i}`} className={i % 2 === 0 ? 'anim-particle1' : 'anim-particle2'} style={{
+                          position: 'absolute', bottom: '-20px', left: `${3 + i * 6}%`,
+                          width: `${3 + (i % 5) * 2}px`, height: `${3 + (i % 5) * 2}px`,
+                          borderRadius: i % 3 === 0 ? '50%' : '1px',
+                          background: ['#fbbf24','#ec4899','#3b82f6','#10b981','#a855f7','#f97316','#ef4444','#06b6d4'][i % 8],
+                          opacity: cutscene >= 5 ? 0.8 : 0.3, transition: 'opacity 2s',
+                          animationDelay: `${i * 0.4}s`, animationDuration: `${3 + i % 4}s`
+                       }}></div>
+                    ))}
                  </div>
-              )}
-
-              {/* 1st Place */}
-              {participants[0] && (
-                 <div className={`anim-slide-up ${podiumStep >= 3 ? 'anim-reveal-glow' : ''}`} style={{ width: '280px', height: '80%', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.4s', overflow: 'visible',
-                    background: podiumStep >= 3 ? 'linear-gradient(175deg, #fef9c3, #eab308, #ca8a04)' : 'linear-gradient(175deg, #334155, #1e293b)',
-                    boxShadow: podiumStep >= 3 ? '0 -10px 60px rgba(234,179,8,0.5), 0 0 80px rgba(234,179,8,0.3), inset 0 1px 0 rgba(255,255,255,0.4)' : '0 0 20px rgba(0,0,0,0.4)',
-                    borderTop: podiumStep >= 3 ? '3px solid rgba(254,240,138,0.8)' : '3px solid rgba(255,255,255,0.1)',
-                    transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
-                 }}>
-                    {podiumStep >= 3 ? (
-                       <>
-                          {/* Crown */}
-                          <div className="anim-crown" style={{ position: 'absolute', top: '-175px', fontSize: '5rem', zIndex: 25, filter: 'drop-shadow(0 4px 15px rgba(234,179,8,0.8))' }}>👑</div>
-                          {/* Glow Ring */}
-                          <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-130px', width: '130px', height: '130px', borderRadius: '50%', border: '4px solid rgba(234,179,8,0.6)', background: 'radial-gradient(circle, rgba(234,179,8,0.2), transparent)' }}></div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '-120px', width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #fbbf24, #eab308)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', boxShadow: '0 10px 30px rgba(234,179,8,0.6)' }}>🥇</div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '-15px', fontSize: '3rem', fontWeight: '900', color: 'white', textShadow: '0 4px 15px rgba(0,0,0,0.8)', animationDelay: '0.3s' }}>{participants[0].name}</div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '35px', fontSize: '1.5rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.5)', color: '#fef08a', padding: '6px 24px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.5s', letterSpacing: '1px' }}>{participants[0].score} PTS</div>
-                       </>
-                    ) : (
-                       <div className={`${podiumStep >= 2 ? 'anim-drumroll' : ''}`} style={{ position: 'absolute', top: '-110px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '3px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <i className="ti ti-question-mark" style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.2)' }}></i>
-                       </div>
-                    )}
-                    <div style={{ marginTop: 'auto', marginBottom: '3rem', fontSize: '7rem', fontWeight: '900', color: 'white', opacity: podiumStep >= 3 ? 0.85 : 0.1, transition: 'opacity 1.5s', textShadow: podiumStep >= 3 ? '0 4px 20px rgba(0,0,0,0.5)' : 'none' }}>1</div>
+                 <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5 }}>
+                    {[...Array(10)].map((_, i) => (
+                       <div key={`s-${i}`} className="anim-star" style={{
+                          position: 'absolute', top: `${8 + (i * 9) % 55}%`, left: `${3 + (i * 11) % 92}%`,
+                          fontSize: `${0.5 + (i % 3) * 0.3}rem`,
+                          color: ['#fbbf24','#e2e8f0','#93c5fd','#c084fc','#fca5a5'][i % 5],
+                          animationDelay: `${i * 0.6}s`, animationDuration: `${1.5 + i % 3}s`,
+                          opacity: cutscene >= 5 ? 1 : 0.5, transition: 'opacity 2s'
+                       }}>✦</div>
+                    ))}
                  </div>
-              )}
+              </>
+           )}
 
-              {/* 3rd Place */}
-              {participants[2] && (
-                 <div className="anim-slide-up" style={{ width: '240px', height: '38%', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.1s', overflow: 'visible',
-                    background: podiumStep >= 1 ? 'linear-gradient(175deg, #fed7aa, #c2410c)' : 'linear-gradient(175deg, #334155, #1e293b)',
-                    boxShadow: podiumStep >= 1 ? '0 0 30px rgba(194,65,12,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 0 20px rgba(0,0,0,0.4)',
-                    borderTop: podiumStep >= 1 ? '3px solid rgba(253,177,124,0.6)' : '3px solid rgba(255,255,255,0.1)',
-                    transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                 }}>
-                    {podiumStep >= 1 ? (
-                       <>
-                          {/* Glow Ring */}
-                          <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-130px', width: '100px', height: '100px', borderRadius: '50%', border: '3px solid rgba(194,65,12,0.5)', background: 'radial-gradient(circle, rgba(194,65,12,0.1), transparent)' }}></div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '-120px', width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #ea580c, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', boxShadow: '0 8px 20px rgba(0,0,0,0.5)' }}>🥉</div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '-35px', fontSize: '2rem', fontWeight: '900', color: 'white', textShadow: '0 2px 8px rgba(0,0,0,0.8)', animationDelay: '0.2s' }}>{participants[2].name}</div>
-                          <div className="anim-pop" style={{ position: 'absolute', top: '10px', fontSize: '1.1rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.4)', color: '#fed7aa', padding: '4px 14px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.4s' }}>{participants[2].score} PTS</div>
-                       </>
-                    ) : (
-                       <div style={{ position: 'absolute', top: '-80px', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <i className="ti ti-question-mark" style={{ fontSize: '2.5rem', color: 'rgba(255,255,255,0.3)' }}></i>
-                       </div>
-                    )}
-                    <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '4rem', fontWeight: '900', color: 'white', opacity: podiumStep >= 1 ? 0.8 : 0.15, transition: 'opacity 1s' }}>3</div>
-                 </div>
-              )}
-           </div>
+           {/* ============================== */}
+           {/* SCENE TITLES (HUD overlay) */}
+           {/* ============================== */}
+           {cutscene >= 1 && cutscene !== 4 && (
+              <div style={{ position: 'absolute', top: '3vh', left: 0, right: 0, textAlign: 'center', zIndex: 15 }}>
+                 {cutscene >= 1 && cutscene < 5 && (
+                    <h2 key={`title-${cutscene}`} className="anim-pop" style={{ fontSize: '3.5rem', fontWeight: '900', color: 'white', textShadow: '0 4px 20px rgba(0,0,0,0.8)', letterSpacing: '4px', margin: 0 }}>
+                       {cutscene === 1 && 'Who Will Take The Stage?'}
+                       {cutscene === 2 && '🥉 3rd Place!'}
+                       {cutscene === 3 && '🥈 2nd Place!'}
+                    </h2>
+                 )}
+                 {cutscene >= 5 && (
+                    <h2 key="title-champ" className="anim-pop anim-title-shimmer" style={{ fontSize: '5rem', fontWeight: '900', letterSpacing: '6px', margin: 0 }}>
+                       🏆 CHAMPION 🏆
+                    </h2>
+                 )}
+              </div>
+           )}
 
-           {/* === BOTTOM FLOOR LINE === */}
-           <div style={{ position: 'absolute', bottom: '4vh', left: '10%', right: '10%', height: '2px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)', zIndex: 10 }}></div>
-           
+           {/* ============================== */}
+           {/* PODIUM AREA (visible from scene 1+) */}
+           {/* ============================== */}
+           {cutscene >= 1 && cutscene !== 4 && (
+              <div style={{
+                 position: 'absolute', bottom: '6vh', left: 0, right: 0, zIndex: 10,
+                 display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2.5rem',
+                 height: '65vh', padding: '0 5vw',
+                 animation: 'cutscenePodiumRise 1.5s cubic-bezier(0.16, 1, 0.3, 1) both'
+              }}>
+
+                 {/* === 2ND PLACE === */}
+                 {participants[1] && (
+                    <div style={{
+                       width: '240px', height: '55%', borderRadius: '20px 20px 0 0', position: 'relative', overflow: 'visible',
+                       display: 'flex', flexDirection: 'column', alignItems: 'center',
+                       background: cutscene >= 3 ? 'linear-gradient(175deg, #e2e8f0 0%, #94a3b8 100%)' : 'linear-gradient(175deg, #1e293b 0%, #0f172a 100%)',
+                       boxShadow: cutscene >= 3 ? '0 0 50px rgba(148,163,184,0.4), inset 0 1px 0 rgba(255,255,255,0.3)' : '0 0 15px rgba(0,0,0,0.5)',
+                       borderTop: cutscene >= 3 ? '3px solid rgba(255,255,255,0.5)' : '3px solid rgba(255,255,255,0.08)',
+                       transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}>
+                       {cutscene >= 3 ? (
+                          <>
+                             <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-145px', width: '110px', height: '110px', borderRadius: '50%', border: '3px solid rgba(148,163,184,0.5)', background: 'radial-gradient(circle, rgba(148,163,184,0.15), transparent)' }}></div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '-135px', width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg, #64748b, #94a3b8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>🥈</div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '-38px', fontSize: '2.2rem', fontWeight: '900', color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)', animationDelay: '0.2s' }}>{participants[1].name}</div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '12px', fontSize: '1.2rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.5)', color: '#e2e8f0', padding: '5px 18px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.4s' }}>{participants[1].score} PTS</div>
+                          </>
+                       ) : (
+                          <div className={cutscene >= 2 ? 'anim-drumroll' : ''} style={{ position: 'absolute', top: '-100px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '2px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                             <i className="ti ti-question-mark" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.2)' }}></i>
+                          </div>
+                       )}
+                       <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '5rem', fontWeight: '900', color: 'white', opacity: cutscene >= 3 ? 0.8 : 0.1, transition: 'opacity 1.2s' }}>2</div>
+                    </div>
+                 )}
+
+                 {/* === 1ST PLACE === */}
+                 {participants[0] && (
+                    <div className={cutscene >= 5 ? 'anim-reveal-glow' : ''} style={{
+                       width: '280px', height: '78%', borderRadius: '20px 20px 0 0', position: 'relative', overflow: 'visible',
+                       display: 'flex', flexDirection: 'column', alignItems: 'center',
+                       background: cutscene >= 5 ? 'linear-gradient(175deg, #fef9c3 0%, #eab308 40%, #a16207 100%)' : 'linear-gradient(175deg, #1e293b 0%, #0f172a 100%)',
+                       boxShadow: cutscene >= 5 ? '0 -10px 80px rgba(234,179,8,0.5), 0 0 100px rgba(234,179,8,0.2)' : '0 0 15px rgba(0,0,0,0.5)',
+                       borderTop: cutscene >= 5 ? '4px solid rgba(254,240,138,0.8)' : '3px solid rgba(255,255,255,0.08)',
+                       transition: 'all 2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}>
+                       {cutscene >= 5 ? (
+                          <>
+                             <div className="anim-crown" style={{ position: 'absolute', top: '-185px', fontSize: '5.5rem', zIndex: 25, filter: 'drop-shadow(0 8px 25px rgba(234,179,8,0.9))' }}>👑</div>
+                             <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-140px', width: '140px', height: '140px', borderRadius: '50%', border: '4px solid rgba(234,179,8,0.5)', background: 'radial-gradient(circle, rgba(234,179,8,0.2), transparent)' }}></div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '-130px', width: '110px', height: '110px', borderRadius: '50%', background: 'linear-gradient(135deg, #fbbf24, #eab308)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', boxShadow: '0 12px 40px rgba(234,179,8,0.6)' }}>🥇</div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '-15px', fontSize: '3.2rem', fontWeight: '900', color: 'white', textShadow: '0 4px 20px rgba(0,0,0,0.8)', animationDelay: '0.3s', maxWidth: '260px', textAlign: 'center', lineHeight: '1.1' }}>{participants[0].name}</div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '38px', fontSize: '1.6rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.6)', color: '#fef08a', padding: '8px 28px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.5s', letterSpacing: '2px' }}>{participants[0].score} PTS</div>
+                          </>
+                       ) : (
+                          <div className={cutscene >= 3 ? 'anim-drumroll' : ''} style={{ position: 'absolute', top: '-120px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '3px dashed rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                             <i className="ti ti-question-mark" style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.15)' }}></i>
+                          </div>
+                       )}
+                       <div style={{ marginTop: 'auto', marginBottom: '3rem', fontSize: '7rem', fontWeight: '900', color: 'white', opacity: cutscene >= 5 ? 0.85 : 0.06, transition: 'opacity 2s', textShadow: cutscene >= 5 ? '0 4px 20px rgba(0,0,0,0.5)' : 'none' }}>1</div>
+                    </div>
+                 )}
+
+                 {/* === 3RD PLACE === */}
+                 {participants[2] && (
+                    <div style={{
+                       width: '240px', height: '40%', borderRadius: '20px 20px 0 0', position: 'relative', overflow: 'visible',
+                       display: 'flex', flexDirection: 'column', alignItems: 'center',
+                       background: cutscene >= 2 ? 'linear-gradient(175deg, #fed7aa 0%, #c2410c 100%)' : 'linear-gradient(175deg, #1e293b 0%, #0f172a 100%)',
+                       boxShadow: cutscene >= 2 ? '0 0 40px rgba(194,65,12,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 0 15px rgba(0,0,0,0.5)',
+                       borderTop: cutscene >= 2 ? '3px solid rgba(253,177,124,0.5)' : '3px solid rgba(255,255,255,0.08)',
+                       transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}>
+                       {cutscene >= 2 ? (
+                          <>
+                             <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-135px', width: '100px', height: '100px', borderRadius: '50%', border: '3px solid rgba(194,65,12,0.4)', background: 'radial-gradient(circle, rgba(194,65,12,0.1), transparent)' }}></div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '-125px', width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #ea580c, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', boxShadow: '0 8px 20px rgba(0,0,0,0.5)' }}>🥉</div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '-38px', fontSize: '2rem', fontWeight: '900', color: 'white', textShadow: '0 2px 8px rgba(0,0,0,0.8)', animationDelay: '0.2s' }}>{participants[2].name}</div>
+                             <div className="anim-pop" style={{ position: 'absolute', top: '8px', fontSize: '1.1rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.5)', color: '#fed7aa', padding: '4px 16px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.4s' }}>{participants[2].score} PTS</div>
+                          </>
+                       ) : (
+                          <div style={{ position: 'absolute', top: '-80px', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '2px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                             <i className="ti ti-question-mark" style={{ fontSize: '2.5rem', color: 'rgba(255,255,255,0.2)' }}></i>
+                          </div>
+                       )}
+                       <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '4rem', fontWeight: '900', color: 'white', opacity: cutscene >= 2 ? 0.8 : 0.1, transition: 'opacity 1.2s' }}>3</div>
+                    </div>
+                 )}
+              </div>
+           )}
+
+           {/* === STAGE FLOOR LINE === */}
+           {cutscene >= 1 && cutscene !== 4 && (
+              <div style={{ position: 'absolute', bottom: '5.5vh', left: '8%', right: '8%', height: '2px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)', zIndex: 10 }}></div>
+           )}
+
            {/* === EXIT BUTTON === */}
-           {podiumStep >= 3 && (
-              <div style={{ position: 'absolute', bottom: '5vh', left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
-                 <button className="btn-primary anim-pop" onClick={() => router.push('/admin')} style={{ padding: '1rem 3rem', fontSize: '1.2rem', animationDelay: '2.5s', boxShadow: '0 8px 25px rgba(79,70,229,0.5)' }}>
+           {cutscene >= 5 && (
+              <div style={{ position: 'absolute', bottom: '2vh', left: '50%', transform: 'translateX(-50%)', zIndex: 30 }}>
+                 <button className="btn-primary anim-pop" onClick={() => router.push('/admin')} style={{ padding: '1rem 3rem', fontSize: '1.2rem', animationDelay: '3s', boxShadow: '0 8px 25px rgba(79,70,229,0.5)' }}>
                     Exit to Dashboard
                  </button>
               </div>
            )}
+
+           {/* === CUTSCENE-SPECIFIC KEYFRAMES === */}
+           <style dangerouslySetInnerHTML={{__html: `
+              @keyframes cutsceneZoomIn {
+                 0% { transform: scale(0.3); opacity: 0; filter: blur(20px); }
+                 60% { transform: scale(1.05); opacity: 1; filter: blur(0px); }
+                 100% { transform: scale(1); opacity: 1; filter: blur(0px); }
+              }
+              @keyframes cutsceneLineExpand {
+                 0% { width: 0; opacity: 0; }
+                 100% { width: 200px; opacity: 1; }
+              }
+              @keyframes cutscenePulse {
+                 0%, 100% { transform: scale(1); opacity: 0.3; }
+                 50% { transform: scale(1.3); opacity: 0.6; }
+              }
+              @keyframes cutsceneChampText {
+                 0% { transform: scale(0.5); opacity: 0; filter: blur(10px); }
+                 30% { transform: scale(1.1); opacity: 1; filter: blur(0px); }
+                 70% { transform: scale(1); opacity: 1; }
+                 100% { transform: scale(1); opacity: 1; }
+              }
+              @keyframes cutsceneRingPulse {
+                 0% { transform: scale(0.8); opacity: 0.4; }
+                 100% { transform: scale(1.5); opacity: 0; }
+              }
+              @keyframes cutscenePodiumRise {
+                 0% { transform: translateY(100%); opacity: 0; }
+                 100% { transform: translateY(0); opacity: 1; }
+              }
+           `}} />
+
         </div>
       )}
 
