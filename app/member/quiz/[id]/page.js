@@ -359,13 +359,63 @@ export default function MemberActiveQuiz() {
            </div>
         )}
 
-        {session.status === 'finished' && (
-           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', height: '100vh', textAlign: 'center' }}>
-             <h2 style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1rem' }}>Game Over!</h2>
-             <p style={{ fontSize: '1.5rem', fontWeight: 'bold', opacity: 0.9, marginBottom: '3rem' }}>Final Score: {session.participants?.[profile.id]?.score || 0}</p>
-             <button onClick={() => router.push('/member')} style={{ background: 'white', color: '#1e40af', border: 'none', padding: '15px 40px', borderRadius: '30px', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>Return Home</button>
-           </div>
-        )}
+        {session.status === 'finished' && (() => {
+           let myFinalRank = -1;
+           if (session.participants && profile?.id) {
+               const allP = Object.entries(session.participants).map(([id, p]) => ({ id, ...p })).sort((a, b) => b.score - a.score);
+               myFinalRank = allP.findIndex(p => p.id === profile.id);
+           }
+           const isTop3 = myFinalRank >= 0 && myFinalRank <= 2;
+           const score = session.participants?.[profile.id]?.score || 0;
+           const trophyColors = ['#fbbf24', '#cbd5e1', '#b45309']; // Gold, Silver, Bronze
+
+           return (
+             <div className="anim-slide-up" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', height: '100vh', textAlign: 'center', paddingBottom: '100px' }}>
+               
+               {isTop3 ? (
+                  <>
+                    <h2 className="anim-pop" style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '1rem', textShadow: '0 2px 10px rgba(0,0,0,0.5)', animationDelay: '0.2s' }}>Congratulations!</h2>
+                    <div className="anim-pop anim-float" style={{ 
+                       width: '160px', height: '160px', 
+                       borderRadius: '50%', background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05))', 
+                       border: `4px solid ${trophyColors[myFinalRank]}`, 
+                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                       margin: '2rem auto', boxShadow: `0 0 40px ${trophyColors[myFinalRank]}80`,
+                       animationDelay: '0.5s'
+                    }}>
+                       <i className="ti ti-trophy" style={{ fontSize: '7rem', color: trophyColors[myFinalRank] }}></i>
+                    </div>
+                    <h3 className="anim-pop" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: trophyColors[myFinalRank], animationDelay: '0.7s', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                       You placed {myFinalRank === 0 ? '1st!' : myFinalRank === 1 ? '2nd!' : '3rd!'}
+                    </h3>
+                  </>
+               ) : (
+                  <>
+                    <h2 className="anim-pop" style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '1rem', textShadow: '0 2px 10px rgba(0,0,0,0.5)', animationDelay: '0.2s' }}>Well Played!</h2>
+                    <div className="anim-pop" style={{ 
+                       width: '140px', height: '140px', 
+                       borderRadius: '50%', background: 'rgba(255,255,255,0.1)', 
+                       border: `4px solid #94a3b8`, 
+                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                       margin: '2rem auto',
+                       animationDelay: '0.4s'
+                    }}>
+                       <i className="ti ti-thumb-up" style={{ fontSize: '6rem', color: '#e2e8f0' }}></i>
+                    </div>
+                  </>
+               )}
+
+               <div className="anim-slide-up" style={{ background: 'rgba(0,0,0,0.4)', padding: '25px 50px', borderRadius: '20px', margin: '2rem auto', backdropFilter: 'blur(10px)', animationDelay: '1s', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+                  <p style={{ margin: 0, fontSize: '1.4rem', opacity: 0.9, fontWeight: 'bold' }}>Final Score</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '3.5rem', fontWeight: '900', color: 'var(--accent)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{score}</p>
+               </div>
+
+               <button className="btn-primary anim-pop" onClick={() => router.push('/member')} style={{ padding: '15px 40px', borderRadius: '30px', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.3)', animationDelay: '1.5s', marginTop: '1rem', border: '2px solid white' }}>
+                  Return Home
+               </button>
+             </div>
+           );
+        })()}
 
       </div>
 

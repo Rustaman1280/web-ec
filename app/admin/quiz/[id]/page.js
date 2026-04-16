@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { subscribeToSession, updateSessionState, awardSessionRewards } from '@/lib/firebaseUtils';
+import confetti from 'canvas-confetti';
 
 function AnimatedLeaderboardRow({ player, activeRank, showNewRanks }) {
    const [displayScore, setDisplayScore] = useState(player.lastScore !== undefined ? player.lastScore : player.score);
@@ -160,14 +161,51 @@ export default function AdminProjectorView() {
   }, [session?.status, answeredCount, totalParticipants]);
 
   const [showNewRanks, setShowNewRanks] = useState(false);
+  const [podiumStep, setPodiumStep] = useState(0);
+  const confettiCanvasRef = useRef(null);
+
+  const fireConfetti = useCallback(() => {
+     // Big burst from both sides
+     const count = 200;
+     const defaults = { origin: { y: 0.7 }, zIndex: 200 };
+     function fire(particleRatio, opts) {
+        confetti({ ...defaults, particleCount: Math.floor(count * particleRatio), ...opts });
+     }
+     fire(0.25, { spread: 26, startVelocity: 55 });
+     fire(0.2, { spread: 60 });
+     fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+     fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+     fire(0.1, { spread: 120, startVelocity: 45 });
+  }, []);
+
+  const fireFireworks = useCallback(() => {
+     const duration = 5000;
+     const animEnd = Date.now() + duration;
+     const interval = setInterval(() => {
+        const timeLeft = animEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({ particleCount, startVelocity: 30, spread: 360, origin: { x: Math.random(), y: Math.random() * 0.4 }, zIndex: 200, colors: ['#fbbf24', '#ec4899', '#3b82f6', '#10b981', '#a855f7', '#ef4444'] });
+     }, 250);
+     return interval;
+  }, []);
 
   useEffect(() => {
      if (session?.status === 'leaderboard') {
         setShowNewRanks(false);
-        const timer = setTimeout(() => setShowNewRanks(true), 3000); // 3s total before rank swaps
+        const timer = setTimeout(() => setShowNewRanks(true), 3000);
         return () => clearTimeout(timer);
      }
-  }, [session?.status]);
+     if (session?.status === 'finished') {
+        setPodiumStep(0);
+        const t1 = setTimeout(() => { setPodiumStep(1); confetti({ particleCount: 40, spread: 50, origin: { x: 0.75, y: 0.6 }, colors: ['#c2410c','#fdb17c','#fed7aa'], zIndex: 200 }); }, 2500);
+        const t2 = setTimeout(() => { setPodiumStep(2); confetti({ particleCount: 60, spread: 60, origin: { x: 0.25, y: 0.5 }, colors: ['#94a3b8','#cbd5e1','#e2e8f0'], zIndex: 200 }); }, 6000);
+        const t3 = setTimeout(() => { setPodiumStep(3); fireConfetti(); }, 10000);
+        let fireworksInterval;
+        const t4 = setTimeout(() => { fireworksInterval = fireFireworks(); }, 11000);
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); if(fireworksInterval) clearInterval(fireworksInterval); };
+     }
+  }, [session?.status, fireConfetti, fireFireworks]);
 
   if(!session) {
     return <div style={{ display: 'flex', height: '80vh', justifyContent: 'center', alignItems: 'center' }}><h2>Loading...</h2></div>;
@@ -295,12 +333,32 @@ export default function AdminProjectorView() {
          @keyframes slideUp { 0% { transform: translateY(100px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
          @keyframes glowing { 0% { box-shadow: 0 0 10px var(--primary); } 50% { box-shadow: 0 4px 30px var(--primary); } 100% { box-shadow: 0 0 10px var(--primary); } }
          @keyframes bounceFlame { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.2); } }
+         @keyframes pulseGlow { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.15); } }
+         @keyframes spotlightSweep { 0% { transform: rotate(-20deg); opacity: 0.15; } 50% { transform: rotate(20deg); opacity: 0.3; } 100% { transform: rotate(-20deg); opacity: 0.15; } }
+         @keyframes spotlightSweep2 { 0% { transform: rotate(25deg); opacity: 0.1; } 50% { transform: rotate(-15deg); opacity: 0.25; } 100% { transform: rotate(25deg); opacity: 0.1; } }
+         @keyframes starTwinkle { 0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(180deg); } }
+         @keyframes drumRollPulse { 0%, 100% { transform: scaleY(1); opacity: 0.6; } 50% { transform: scaleY(1.08); opacity: 1; } }
+         @keyframes revealGlow { 0% { box-shadow: 0 0 0px transparent; } 100% { box-shadow: 0 0 60px rgba(234, 179, 8, 0.8), 0 0 120px rgba(234, 179, 8, 0.4); } }
+         @keyframes crownBounce { 0% { transform: translateY(0) scale(1) rotate(0deg); } 25% { transform: translateY(-15px) scale(1.2) rotate(-5deg); } 50% { transform: translateY(0) scale(1) rotate(0deg); } 75% { transform: translateY(-10px) scale(1.15) rotate(5deg); } 100% { transform: translateY(0) scale(1) rotate(0deg); } }
+         @keyframes particleFloat1 { 0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.8; } 100% { transform: translateY(-100vh) translateX(50px) rotate(360deg); opacity: 0; } }
+         @keyframes particleFloat2 { 0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.6; } 100% { transform: translateY(-100vh) translateX(-40px) rotate(-360deg); opacity: 0; } }
+         @keyframes titleShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
          
          .anim-float { animation: float 4s ease-in-out infinite; }
          .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
          .anim-slide-up { animation: slideUp 0.6s ease-out both; }
          .anim-glow { animation: glowing 2s infinite; }
          .anim-flame { animation: bounceFlame 1s infinite alternate; }
+         .anim-pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+         .anim-spotlight { animation: spotlightSweep 6s ease-in-out infinite; }
+         .anim-spotlight2 { animation: spotlightSweep2 8s ease-in-out infinite; }
+         .anim-star { animation: starTwinkle 2s ease-in-out infinite; }
+         .anim-drumroll { animation: drumRollPulse 0.3s ease-in-out infinite; }
+         .anim-reveal-glow { animation: revealGlow 1s ease-out both; }
+         .anim-crown { animation: crownBounce 2s ease-in-out infinite; }
+         .anim-particle1 { animation: particleFloat1 4s ease-out infinite; }
+         .anim-particle2 { animation: particleFloat2 5s ease-out infinite; }
+         .anim-title-shimmer { background: linear-gradient(90deg, #fbbf24, #fef08a, #fbbf24, #f59e0b); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: titleShimmer 3s linear infinite; }
          
          .text-theme { color: ${session.bgTheme && session.bgTheme !== 'default' ? '#fff' : 'inherit'}; text-shadow: ${session.bgTheme && session.bgTheme !== 'default' ? '0 2px 4px rgba(0,0,0,0.5)' : 'none'} }
       `}} />
@@ -456,40 +514,164 @@ export default function AdminProjectorView() {
       )}
 
       {session.status === 'finished' && (
-        <div className="anim-slide-up" style={{ marginTop: '10vh' }}>
-           <h2 className="heading-xl text-theme" style={{ fontSize: '4rem', marginBottom: '2rem', textShadow: '0 4px 10px rgba(255,255,255,0.5)' }}>
-              Final Podium
-           </h2>
+        <div className="anim-slide-up" style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 50% 100%, #1e3a8a 0%, #0f172a 60%, #030712 100%)', zIndex: 100, overflow: 'hidden' }}>
            
-           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2rem', height: '400px', marginTop: '4rem' }}>
-              {/* 2nd Place */}
-              {participants[1] && (
-                 <div className="anim-slide-up" style={{ width: '220px', height: '60%', background: 'linear-gradient(145deg, #e2e8f0, #94a3b8)', borderRadius: '16px 16px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.4s' }}>
-                    <div className="anim-pop text-theme" style={{ position: 'absolute', top: '-60px', fontSize: '2.5rem', fontWeight: 'bold', animationDelay: '1.2s' }}>{participants[1].name}</div>
-                    <div style={{ position: 'absolute', top: '-100px', fontSize: '1.5rem', fontWeight: 'bold', background: 'var(--bg-dark)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '12px' }}>{participants[1].score}</div>
-                    <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '5rem', fontWeight: '900', color: 'white', opacity: 0.7 }}>2</div>
-                 </div>
+           {/* === SPOTLIGHT BEAMS === */}
+           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+              {/* Left Spotlight */}
+              <div className="anim-spotlight" style={{ position: 'absolute', bottom: '0', left: '15%', width: '300px', height: '120vh', background: 'linear-gradient(0deg, rgba(234,179,8,0.15), transparent 70%)', transformOrigin: 'bottom center', filter: 'blur(15px)' }}></div>
+              {/* Right Spotlight */}
+              <div className="anim-spotlight2" style={{ position: 'absolute', bottom: '0', right: '15%', width: '300px', height: '120vh', background: 'linear-gradient(0deg, rgba(168,85,247,0.12), transparent 70%)', transformOrigin: 'bottom center', filter: 'blur(15px)' }}></div>
+              {/* Center Spotlight – activates with 1st place */}
+              {podiumStep >= 3 && (
+                 <div className="anim-pop" style={{ position: 'absolute', bottom: '0', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '130vh', background: 'linear-gradient(0deg, rgba(234,179,8,0.25), transparent 60%)', filter: 'blur(20px)' }}></div>
               )}
-              {/* 1st Place */}
-              {participants[0] && (
-                 <div className="anim-slide-up" style={{ width: '250px', height: '85%', background: 'linear-gradient(145deg, #fef08a, #eab308)', borderRadius: '16px 16px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', boxShadow: '0 -10px 40px rgba(234, 179, 8, 0.4)', animationDelay: '0.8s' }}>
-                    <i className="ti ti-crown anim-pop" style={{ position: 'absolute', top: '-120px', fontSize: '4rem', color: '#eab308', animationDelay: '1.8s' }}></i>
-                    <div className="anim-pop text-theme" style={{ position: 'absolute', top: '-70px', fontSize: '3rem', fontWeight: '900', animationDelay: '1.8s' }}>{participants[0].name}</div>
-                    <div style={{ position: 'absolute', top: '-150px', fontSize: '1.8rem', fontWeight: 'bold', background: 'var(--bg-dark)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '12px' }}>{participants[0].score}</div>
-                    <div style={{ marginTop: 'auto', marginBottom: '3rem', fontSize: '7rem', fontWeight: '900', color: 'white', opacity: 0.8 }}>1</div>
-                 </div>
+           </div>
+
+           {/* === FLOATING PARTICLES === */}
+           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2, overflow: 'hidden' }}>
+              {[...Array(12)].map((_, i) => (
+                 <div key={i} className={i % 2 === 0 ? 'anim-particle1' : 'anim-particle2'} style={{
+                    position: 'absolute',
+                    bottom: '-20px',
+                    left: `${5 + (i * 8)}%`,
+                    width: `${4 + (i % 4) * 3}px`,
+                    height: `${4 + (i % 4) * 3}px`,
+                    borderRadius: i % 3 === 0 ? '50%' : i % 3 === 1 ? '2px' : '0',
+                    background: ['#fbbf24','#ec4899','#3b82f6','#10b981','#a855f7','#f97316'][i % 6],
+                    opacity: 0.6,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: `${3 + (i % 3)}s`,
+                    transform: i % 3 === 1 ? 'rotate(45deg)' : 'none',
+                 }}></div>
+              ))}
+           </div>
+
+           {/* === TWINKLING STARS === */}
+           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
+              {[...Array(8)].map((_, i) => (
+                 <div key={`star-${i}`} className="anim-star" style={{
+                    position: 'absolute',
+                    top: `${10 + (i * 10) % 60}%`,
+                    left: `${5 + (i * 13) % 90}%`,
+                    fontSize: `${0.6 + (i % 3) * 0.4}rem`,
+                    color: ['#fbbf24','#e2e8f0','#93c5fd','#c084fc'][i % 4],
+                    animationDelay: `${i * 0.7}s`,
+                    animationDuration: `${2 + (i % 2)}s`,
+                 }}>✦</div>
+              ))}
+           </div>
+
+           {/* === TITLE === */}
+           <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', paddingTop: '4vh' }}>
+              {podiumStep < 3 ? (
+                 <h2 className={`heading-xl anim-pop ${podiumStep === 0 ? 'anim-drumroll' : ''}`} style={{ fontSize: '4.5rem', marginBottom: '0', color: 'white', textShadow: '0 4px 20px rgba(0,0,0,0.8)', letterSpacing: '3px' }}>
+                    {podiumStep === 0 && 'And the winners are...'}
+                    {podiumStep === 1 && '3rd Place Revealed!'}
+                    {podiumStep === 2 && '2nd Place Revealed!'}
+                 </h2>
+              ) : (
+                 <h2 className="heading-xl anim-pop anim-title-shimmer" style={{ fontSize: '5rem', marginBottom: '0', letterSpacing: '5px', fontWeight: '900' }}>
+                    🏆 CHAMPION 🏆
+                 </h2>
               )}
-              {/* 3rd Place */}
-              {participants[2] && (
-                 <div className="anim-slide-up" style={{ width: '220px', height: '40%', background: 'linear-gradient(145deg, #fdb17c, #c2410c)', borderRadius: '16px 16px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.2s' }}>
-                    <div className="anim-pop text-theme" style={{ position: 'absolute', top: '-60px', fontSize: '2.5rem', fontWeight: 'bold', animationDelay: '1.0s' }}>{participants[2].name}</div>
-                    <div style={{ position: 'absolute', top: '-100px', fontSize: '1.5rem', fontWeight: 'bold', background: 'var(--bg-dark)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '12px' }}>{participants[2].score}</div>
-                    <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '4rem', fontWeight: '900', color: 'white', opacity: 0.7 }}>3</div>
-                 </div>
+              {podiumStep === 0 && (
+                 <p className="anim-slide-up" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.5rem', marginTop: '10px', fontWeight: 'bold', letterSpacing: '2px' }}>DRUM ROLL...</p>
               )}
            </div>
            
-           <button className="btn-primary anim-pop" onClick={() => router.push('/admin')} style={{ marginTop: '6rem', padding: '1rem 3rem', fontSize: '1.2rem', animationDelay: '2.5s' }}>Exit to Dashboard</button>
+           {/* === PODIUM === */}
+           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2.5rem', height: '55vh', marginTop: '2rem', position: 'relative', zIndex: 10, paddingBottom: '4vh' }}>
+              
+              {/* 2nd Place */}
+              {participants[1] && (
+                 <div className="anim-slide-up" style={{ width: '240px', height: '55%', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.2s', overflow: 'visible',
+                    background: podiumStep >= 2 ? 'linear-gradient(175deg, #e2e8f0, #94a3b8)' : 'linear-gradient(175deg, #334155, #1e293b)',
+                    boxShadow: podiumStep >= 2 ? '0 0 40px rgba(148,163,184,0.4), inset 0 1px 0 rgba(255,255,255,0.3)' : '0 0 20px rgba(0,0,0,0.4)',
+                    borderTop: podiumStep >= 2 ? '3px solid rgba(255,255,255,0.5)' : '3px solid rgba(255,255,255,0.1)',
+                    transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                 }}>
+                    {podiumStep >= 2 ? (
+                       <>
+                          {/* Glow Ring */}
+                          <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-140px', width: '110px', height: '110px', borderRadius: '50%', border: '3px solid rgba(148,163,184,0.6)', background: 'radial-gradient(circle, rgba(148,163,184,0.15), transparent)' }}></div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '-130px', width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg, #64748b, #94a3b8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', boxShadow: '0 8px 25px rgba(0,0,0,0.5)' }}>🥈</div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '-35px', fontSize: '2.2rem', fontWeight: '900', color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)', animationDelay: '0.2s' }}>{participants[1].name}</div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '15px', fontSize: '1.2rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.4)', color: '#e2e8f0', padding: '4px 16px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.4s' }}>{participants[1].score} PTS</div>
+                       </>
+                    ) : (
+                       <div className={`${podiumStep >= 1 ? 'anim-drumroll' : ''}`} style={{ position: 'absolute', top: '-100px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <i className="ti ti-question-mark" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.3)' }}></i>
+                       </div>
+                    )}
+                    <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '5rem', fontWeight: '900', color: 'white', opacity: podiumStep >= 2 ? 0.8 : 0.15, transition: 'opacity 1s' }}>2</div>
+                 </div>
+              )}
+
+              {/* 1st Place */}
+              {participants[0] && (
+                 <div className={`anim-slide-up ${podiumStep >= 3 ? 'anim-reveal-glow' : ''}`} style={{ width: '280px', height: '80%', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.4s', overflow: 'visible',
+                    background: podiumStep >= 3 ? 'linear-gradient(175deg, #fef9c3, #eab308, #ca8a04)' : 'linear-gradient(175deg, #334155, #1e293b)',
+                    boxShadow: podiumStep >= 3 ? '0 -10px 60px rgba(234,179,8,0.5), 0 0 80px rgba(234,179,8,0.3), inset 0 1px 0 rgba(255,255,255,0.4)' : '0 0 20px rgba(0,0,0,0.4)',
+                    borderTop: podiumStep >= 3 ? '3px solid rgba(254,240,138,0.8)' : '3px solid rgba(255,255,255,0.1)',
+                    transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                 }}>
+                    {podiumStep >= 3 ? (
+                       <>
+                          {/* Crown */}
+                          <div className="anim-crown" style={{ position: 'absolute', top: '-175px', fontSize: '5rem', zIndex: 25, filter: 'drop-shadow(0 4px 15px rgba(234,179,8,0.8))' }}>👑</div>
+                          {/* Glow Ring */}
+                          <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-130px', width: '130px', height: '130px', borderRadius: '50%', border: '4px solid rgba(234,179,8,0.6)', background: 'radial-gradient(circle, rgba(234,179,8,0.2), transparent)' }}></div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '-120px', width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #fbbf24, #eab308)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', boxShadow: '0 10px 30px rgba(234,179,8,0.6)' }}>🥇</div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '-15px', fontSize: '3rem', fontWeight: '900', color: 'white', textShadow: '0 4px 15px rgba(0,0,0,0.8)', animationDelay: '0.3s' }}>{participants[0].name}</div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '35px', fontSize: '1.5rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.5)', color: '#fef08a', padding: '6px 24px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.5s', letterSpacing: '1px' }}>{participants[0].score} PTS</div>
+                       </>
+                    ) : (
+                       <div className={`${podiumStep >= 2 ? 'anim-drumroll' : ''}`} style={{ position: 'absolute', top: '-110px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '3px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <i className="ti ti-question-mark" style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.2)' }}></i>
+                       </div>
+                    )}
+                    <div style={{ marginTop: 'auto', marginBottom: '3rem', fontSize: '7rem', fontWeight: '900', color: 'white', opacity: podiumStep >= 3 ? 0.85 : 0.1, transition: 'opacity 1.5s', textShadow: podiumStep >= 3 ? '0 4px 20px rgba(0,0,0,0.5)' : 'none' }}>1</div>
+                 </div>
+              )}
+
+              {/* 3rd Place */}
+              {participants[2] && (
+                 <div className="anim-slide-up" style={{ width: '240px', height: '38%', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', animationDelay: '0.1s', overflow: 'visible',
+                    background: podiumStep >= 1 ? 'linear-gradient(175deg, #fed7aa, #c2410c)' : 'linear-gradient(175deg, #334155, #1e293b)',
+                    boxShadow: podiumStep >= 1 ? '0 0 30px rgba(194,65,12,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' : '0 0 20px rgba(0,0,0,0.4)',
+                    borderTop: podiumStep >= 1 ? '3px solid rgba(253,177,124,0.6)' : '3px solid rgba(255,255,255,0.1)',
+                    transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                 }}>
+                    {podiumStep >= 1 ? (
+                       <>
+                          {/* Glow Ring */}
+                          <div className="anim-pulse-glow" style={{ position: 'absolute', top: '-130px', width: '100px', height: '100px', borderRadius: '50%', border: '3px solid rgba(194,65,12,0.5)', background: 'radial-gradient(circle, rgba(194,65,12,0.1), transparent)' }}></div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '-120px', width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #ea580c, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', boxShadow: '0 8px 20px rgba(0,0,0,0.5)' }}>🥉</div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '-35px', fontSize: '2rem', fontWeight: '900', color: 'white', textShadow: '0 2px 8px rgba(0,0,0,0.8)', animationDelay: '0.2s' }}>{participants[2].name}</div>
+                          <div className="anim-pop" style={{ position: 'absolute', top: '10px', fontSize: '1.1rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.4)', color: '#fed7aa', padding: '4px 14px', borderRadius: '20px', backdropFilter: 'blur(5px)', animationDelay: '0.4s' }}>{participants[2].score} PTS</div>
+                       </>
+                    ) : (
+                       <div style={{ position: 'absolute', top: '-80px', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <i className="ti ti-question-mark" style={{ fontSize: '2.5rem', color: 'rgba(255,255,255,0.3)' }}></i>
+                       </div>
+                    )}
+                    <div style={{ marginTop: 'auto', marginBottom: '2rem', fontSize: '4rem', fontWeight: '900', color: 'white', opacity: podiumStep >= 1 ? 0.8 : 0.15, transition: 'opacity 1s' }}>3</div>
+                 </div>
+              )}
+           </div>
+
+           {/* === BOTTOM FLOOR LINE === */}
+           <div style={{ position: 'absolute', bottom: '4vh', left: '10%', right: '10%', height: '2px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)', zIndex: 10 }}></div>
+           
+           {/* === EXIT BUTTON === */}
+           {podiumStep >= 3 && (
+              <div style={{ position: 'absolute', bottom: '5vh', left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
+                 <button className="btn-primary anim-pop" onClick={() => router.push('/admin')} style={{ padding: '1rem 3rem', fontSize: '1.2rem', animationDelay: '2.5s', boxShadow: '0 8px 25px rgba(79,70,229,0.5)' }}>
+                    Exit to Dashboard
+                 </button>
+              </div>
+           )}
         </div>
       )}
 
