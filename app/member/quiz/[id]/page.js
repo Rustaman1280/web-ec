@@ -137,9 +137,12 @@ export default function MemberActiveQuiz() {
   const activeQ = session && session.status === 'active' && session.questions ? session.questions[session.currentQuestionIndex] : null;
   const isMultiple = activeQ?.questionType === 'multiple';
 
-  const calculatePoints = (isCorrect) => {
-      // Basic logic without time decay, or use standard Kahoot logic. For now: Max points if correct.
-      return isCorrect ? (activeQ?.rewardPoints || 1000) : 0;
+  const calculatePoints = (isCorrect, timeTakenMs) => {
+      const multiplier = activeQ?.isDoublePoints ? 2 : 1;
+      if (!isCorrect) return 0;
+      const basePoints = 500;
+      const timeBonus = Math.max(0, 500 - Math.floor(timeTakenMs / 10));
+      return (basePoints + timeBonus) * multiplier;
   };
 
   const handleAnswer = async (index) => {
@@ -157,7 +160,7 @@ export default function MemberActiveQuiz() {
     setHasAnswered(true);
     const timeTakenMs = Date.now() - questionStartTime;
     const isCorrect = activeQ.correctIndex === index;
-    const pts = calculatePoints(isCorrect);
+    const pts = calculatePoints(isCorrect, timeTakenMs);
     
     setLastResult({ isCorrect, pointsGained: pts });
     await submitAnswer(pin, profile.id, index, timeTakenMs, isCorrect);
@@ -173,7 +176,7 @@ export default function MemberActiveQuiz() {
        selectedIndices.length === expected.length && 
        selectedIndices.every(val => expected.includes(val));
     
-    const pts = calculatePoints(isCorrect);
+    const pts = calculatePoints(isCorrect, timeTakenMs);
     setLastResult({ isCorrect, pointsGained: pts });
     await submitAnswer(pin, profile.id, selectedIndices, timeTakenMs, isCorrect);
   };
@@ -365,53 +368,30 @@ export default function MemberActiveQuiz() {
         )}
 
         {session.status === 'finished' && (() => {
-           let myFinalRank = -1;
-           if (session.participants && profile?.id) {
-               const allP = Object.entries(session.participants).map(([id, p]) => ({ id, ...p })).sort((a, b) => b.score - a.score);
-               myFinalRank = allP.findIndex(p => p.id === profile.id);
-           }
-           const isTop3 = myFinalRank >= 0 && myFinalRank <= 2;
            const score = session.participants?.[profile.id]?.score || 0;
-           const trophyColors = ['#fbbf24', '#cbd5e1', '#b45309']; // Gold, Silver, Bronze
 
            return (
              <div className="anim-slide-up" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', height: '100vh', textAlign: 'center', paddingBottom: '100px' }}>
                
-               {isTop3 ? (
-                  <>
-                    <h2 className="anim-pop" style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '1rem', textShadow: '0 2px 10px rgba(0,0,0,0.5)', animationDelay: '0.2s' }}>Congratulations!</h2>
-                    <div className="anim-pop anim-float" style={{ 
-                       width: '160px', height: '160px', 
-                       borderRadius: '50%', background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05))', 
-                       border: `4px solid ${trophyColors[myFinalRank]}`, 
-                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                       margin: '2rem auto', boxShadow: `0 0 40px ${trophyColors[myFinalRank]}80`,
-                       animationDelay: '0.5s'
-                    }}>
-                       <i className="ti ti-trophy" style={{ fontSize: '7rem', color: trophyColors[myFinalRank] }}></i>
-                    </div>
-                    <h3 className="anim-pop" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: trophyColors[myFinalRank], animationDelay: '0.7s', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-                       You placed {myFinalRank === 0 ? '1st!' : myFinalRank === 1 ? '2nd!' : '3rd!'}
-                    </h3>
-                  </>
-               ) : (
-                  <>
-                    <h2 className="anim-pop" style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '1rem', textShadow: '0 2px 10px rgba(0,0,0,0.5)', animationDelay: '0.2s' }}>Well Played!</h2>
-                    <div className="anim-pop" style={{ 
-                       width: '140px', height: '140px', 
-                       borderRadius: '50%', background: 'rgba(255,255,255,0.1)', 
-                       border: `4px solid #94a3b8`, 
-                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                       margin: '2rem auto',
-                       animationDelay: '0.4s'
-                    }}>
-                       <i className="ti ti-thumb-up" style={{ fontSize: '6rem', color: '#e2e8f0' }}></i>
-                    </div>
-                  </>
-               )}
+               <h2 className="anim-pop" style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '1rem', textShadow: '0 2px 10px rgba(0,0,0,0.5)', animationDelay: '0.2s' }}>Quiz Finished!</h2>
+               
+               <div className="anim-pop" style={{ 
+                  width: '140px', height: '140px', 
+                  borderRadius: '50%', background: 'rgba(255,255,255,0.1)', 
+                  border: `4px solid #94a3b8`, 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  margin: '2rem auto',
+                  animationDelay: '0.4s'
+               }}>
+                  <i className="ti ti-device-tv" style={{ fontSize: '6rem', color: '#e2e8f0' }}></i>
+               </div>
+               
+               <h3 className="anim-pop" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#cbd5e1', animationDelay: '0.6s', maxWidth: '80%', margin: '0 auto', lineHeight: '1.4' }}>
+                  Look at the projector to see the final results!
+               </h3>
 
-               <div className="anim-slide-up" style={{ background: 'rgba(0,0,0,0.4)', padding: '25px 50px', borderRadius: '20px', margin: '2rem auto', backdropFilter: 'blur(10px)', animationDelay: '1s', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-                  <p style={{ margin: 0, fontSize: '1.4rem', opacity: 0.9, fontWeight: 'bold' }}>Final Score</p>
+               <div className="anim-slide-up" style={{ background: 'rgba(0,0,0,0.4)', padding: '25px 50px', borderRadius: '20px', margin: '2.5rem auto 1rem auto', backdropFilter: 'blur(10px)', animationDelay: '1s', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+                  <p style={{ margin: 0, fontSize: '1.4rem', opacity: 0.9, fontWeight: 'bold' }}>Your Final Score</p>
                   <p style={{ margin: '5px 0 0 0', fontSize: '3.5rem', fontWeight: '900', color: 'var(--accent)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{score}</p>
                </div>
 

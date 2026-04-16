@@ -30,7 +30,7 @@ export default function MemberQuizHistory() {
   // Stats
   const totalGames = history.length;
   const totalWins = history.filter(h => h.myRank === 1).length;
-  const bestRank = totalGames > 0 ? Math.min(...history.map(h => h.myRank)) : '-';
+  const topFinishes = history.filter(h => h.myRank <= 3).length;
   const avgScore = totalGames > 0 ? Math.round(history.reduce((s, h) => s + h.myScore, 0) / totalGames) : 0;
 
   return (
@@ -57,8 +57,8 @@ export default function MemberQuizHistory() {
             <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.8 }}>Wins</div>
          </div>
          <div className="glass-panel" style={{ padding: '1.2rem', textAlign: 'center', border: '2px solid var(--primary)', borderRadius: '16px' }}>
-            <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--primary)' }}>{bestRank}</div>
-            <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Best Rank</div>
+            <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--primary)' }}>{topFinishes}</div>
+            <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Top 3 Finishes</div>
          </div>
          <div className="glass-panel" style={{ padding: '1.2rem', textAlign: 'center', border: '2px solid var(--accent)', borderRadius: '16px' }}>
             <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--accent)' }}>{avgScore}</div>
@@ -102,7 +102,7 @@ export default function MemberQuizHistory() {
                     <div style={{ textAlign: 'right' }}>
                        <div style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--primary)' }}>{h.myScore}</div>
                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>
-                          Rank #{h.myRank} of {h.totalParticipants}
+                          {h.myRank <= 3 ? `#${h.myRank} of ${h.totalParticipants}` : `${h.totalParticipants} players`}
                        </div>
                     </div>
                  </div>

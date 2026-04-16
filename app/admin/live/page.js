@@ -106,16 +106,27 @@ export default function AdminLiveQuizzes() {
                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-main)', background: '#cbd5e1', padding: '4px 10px', borderRadius: '20px' }}>
                  {quiz.questions?.length || 0} Questions
                </span>
-               <button 
-                 onClick={() => handleCreateSession(quiz)} 
-                 disabled={sessionLoading || !quiz.questions?.length} 
-                 style={{ 
-                   background: quiz.color, color: 'white', padding: '10px 20px', 
-                   borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: sessionLoading ? 'wait' : 'pointer',
-                   boxShadow: `0 4px 14px ${quiz.color}40`, opacity: quiz.questions?.length ? 1 : 0.5
-                 }}>
-                 Host Game
-               </button>
+               <div style={{ display: 'flex', gap: '8px' }}>
+                 <button 
+                   onClick={() => router.push(`/admin/live/create?edit=${quiz.id}`)} 
+                   style={{ 
+                     background: 'var(--bg-surface)', color: 'var(--text-main)', padding: '10px 16px', 
+                     borderRadius: '8px', fontWeight: 'bold', border: '1px solid var(--border-light)', cursor: 'pointer',
+                     display: 'flex', alignItems: 'center', gap: '5px'
+                   }}>
+                   <i className="ti ti-pencil"></i> Edit
+                 </button>
+                 <button 
+                   onClick={() => handleCreateSession(quiz)} 
+                   disabled={sessionLoading || !quiz.questions?.length} 
+                   style={{ 
+                     background: quiz.color, color: 'white', padding: '10px 20px', 
+                     borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: sessionLoading ? 'wait' : 'pointer',
+                     boxShadow: `0 4px 14px ${quiz.color}40`, opacity: quiz.questions?.length ? 1 : 0.5
+                   }}>
+                   Host Game
+                 </button>
+               </div>
              </div>
            </div>
          ))}
