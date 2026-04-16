@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { database, getSpeechySubmissions } from '@/lib/firebaseUtils';
+import { getSpeechySubmissions } from '@/lib/firebaseUtils';
+import { database } from '@/lib/firebase';
 import { ref, get } from 'firebase/database';
 import Link from 'next/link';
 

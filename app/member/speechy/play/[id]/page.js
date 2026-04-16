@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { database, submitSpeechyAsync } from '@/lib/firebaseUtils';
+import { submitSpeechyAsync } from '@/lib/firebaseUtils';
+import { database } from '@/lib/firebase';
 import { ref, get } from 'firebase/database';
 import { useAuth } from '@/hooks/useAuth';
 import confetti from 'canvas-confetti';
