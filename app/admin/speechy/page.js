@@ -30,20 +30,6 @@ export default function AdminSpeechy() {
     }
   };
 
-  const handleCreateSession = async (quiz) => {
-    setSessionLoading(true); 
-    setError(null);
-    try {
-      const pin = await createSpeechySession(quiz.id, quiz.sessionPoints, quiz.sessionExp, quiz.targetText, quiz.bgTheme, quiz.bgMusic, quiz.title);
-      if(pin) router.push(`/admin/speechy/${pin}`);
-      else setError('Failed to create session. Check rules/connection.');
-    } catch (err) {
-      console.error(err); 
-      setError('An error occurred starting the Speechy game.');
-    }
-    setSessionLoading(false);
-  };
-
   return (
     <div className="container" style={{ padding: '0.5rem 1.5rem', paddingLeft: '0' }}>
        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
@@ -114,14 +100,13 @@ export default function AdminSpeechy() {
                    <i className="ti ti-pencil"></i> Edit
                  </button>
                  <button 
-                   onClick={() => handleCreateSession(quiz)} 
-                   disabled={sessionLoading} 
+                   onClick={() => router.push(`/admin/speechy/submissions/${quiz.id}`)} 
                    style={{ 
                      background: quiz.color || '#3b82f6', color: 'white', padding: '10px 20px', 
-                     borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: sessionLoading ? 'wait' : 'pointer',
+                     borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer',
                      boxShadow: `0 4px 14px ${(quiz.color || '#3b82f6')}40`
                    }}>
-                   Host Game
+                   View Submissions
                  </button>
                </div>
              </div>

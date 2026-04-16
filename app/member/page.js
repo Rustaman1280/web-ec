@@ -204,6 +204,10 @@ export default function StudentDashboard() {
            <i className="ti ti-send" style={{ fontSize: '2.5rem', color: '#3b82f6' }}></i>
            <div style={{ fontWeight: 'bold' }}>Share Pts</div>
         </Link>
+        <Link href="/member/speechy" className="glass-panel" style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit' }}>
+           <i className="ti ti-microphone-2" style={{ fontSize: '2.5rem', color: '#f43f5e' }}></i>
+           <div style={{ fontWeight: 'bold' }}>Speaking Lab</div>
+        </Link>
         <Link href="/member/quiz-history" className="glass-panel" style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit' }}>
            <i className="ti ti-device-gamepad-2" style={{ fontSize: '2.5rem', color: 'var(--accent)' }}></i>
            <div style={{ fontWeight: 'bold' }}>Quiz History</div>
