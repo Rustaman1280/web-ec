@@ -1,7 +1,26 @@
+'use client';
+import { usePathname } from 'next/navigation';
 import BottomBar from '@/components/BottomBar';
 import MemberTopbar from '@/components/MemberTopbar';
 
 export default function MemberLayout({ children }) {
+  const pathname = usePathname();
+  const isQuizPlaying = pathname?.includes('/quiz/');
+
+  if (isQuizPlaying) {
+    return (
+       <div style={{
+          minHeight: '100vh',
+          backgroundColor: 'var(--bg-dark)',
+          position: 'relative',
+       }}>
+          <main style={{ minHeight: '100vh' }}>
+            {children}
+          </main>
+       </div>
+    );
+  }
+
   return (
     <div style={{
       maxWidth: '480px',

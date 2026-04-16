@@ -1,7 +1,12 @@
+'use client';
+import { usePathname } from 'next/navigation';
 import AdminGuard from '@/components/AdminGuard';
 import AdminSidebar from '@/components/AdminSidebar';
 
 export default function AdminLayout({ children }) {
+  const pathname = usePathname();
+  const isQuizProjector = pathname?.includes('/quiz/');
+
   return (
     <AdminGuard>
       <div className="admin-layout-container" style={{
@@ -11,9 +16,9 @@ export default function AdminLayout({ children }) {
         position: 'relative'
       }}>
         
-        <AdminSidebar />
+        {!isQuizProjector && <AdminSidebar />}
         
-        <main className="admin-main-content" style={{ flex: 1, padding: '1rem', paddingLeft: '0', overflowY: 'auto' }}>
+        <main className="admin-main-content" style={{ flex: 1, padding: isQuizProjector ? '0' : '1rem', paddingLeft: isQuizProjector ? '0' : '1rem', overflowY: 'auto' }}>
           {children}
         </main>
         
@@ -23,7 +28,7 @@ export default function AdminLayout({ children }) {
                flex-direction: column !important;
             }
             .admin-main-content {
-              padding-left: 1rem !important;
+              padding-left: ${isQuizProjector ? '0' : '1rem'} !important;
             }
           }
         `}} />

@@ -82,9 +82,45 @@ export default function ProfilePage() {
     setExpConverting(false);
   };
 
+  const compressImage = (originalFile, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(originalFile);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Force JPEG output for size reduction, skipping PNG alphas since it's an avatar
+          canvas.toBlob((blob) => {
+            const compressedFile = new File([blob], originalFile.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          }, 'image/jpeg', quality);
+        };
+      };
+    });
+  };
+
   const attemptPhotoUpload = async (e) => {
-    const file = e.target.files[0];
-    if(!file) return;
+    const rawFile = e.target.files[0];
+    if(!rawFile) return;
     
     // Check if they have enough balance (Cost 100)
     if((profile.points || 0) < 100) {
@@ -94,6 +130,8 @@ export default function ProfilePage() {
 
     setUploading(true);
     try {
+      const file = await compressImage(rawFile, 1024, 0.85); // Moderate compression for better quality
+
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
       const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
       

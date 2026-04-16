@@ -3,6 +3,69 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { subscribeToSession, updateSessionState, awardSessionRewards } from '@/lib/firebaseUtils';
 
+function AnimatedLeaderboardRow({ player, activeRank, showNewRanks }) {
+   const [displayScore, setDisplayScore] = useState(player.lastScore !== undefined ? player.lastScore : player.score);
+   
+   useEffect(() => {
+      const duration = 1500; // count up over 1.5 seconds
+      const start = player.lastScore !== undefined ? player.lastScore : player.score;
+      const end = player.score;
+      setDisplayScore(start); // reset
+      if (start === end) return;
+      
+      let startTime;
+      const animate = (time) => {
+         if (!startTime) startTime = time;
+         const progress = Math.min((time - startTime) / duration, 1);
+         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+         setDisplayScore(Math.floor(start + (end - start) * easeOutQuart));
+         if (progress < 1) requestAnimationFrame(animate);
+      };
+      const frame = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(frame);
+   }, [player.score, player.lastScore, showNewRanks]);
+
+   const isFirst = activeRank === 0;
+   const isVisible = activeRank < 5 && activeRank >= 0; // Show top 5
+
+   return (
+      <div style={{
+         position: 'absolute',
+         top: 0, left: 0, right: 0,
+         transform: `translateY(${activeRank * 115}px)`, // 115px gap
+         transition: 'transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s', // bouncy swap
+         opacity: isVisible ? 1 : 0, 
+         pointerEvents: isVisible ? 'auto' : 'none',
+         zIndex: isFirst ? 10 : 5 - activeRank
+      }}>
+         <div className={`anim-pop ${isFirst ? 'anim-glow' : ''}`} style={{
+            animationDelay: showNewRanks ? '0s' : `${activeRank * 0.15}s`, // only delay initial popIn
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '1.5rem 3rem', 
+            background: isFirst ? 'var(--gradient-primary)' : 'var(--bg-glass)', 
+            color: isFirst ? 'white' : 'var(--text-main)',
+            borderRadius: '16px', fontSize: '2.2rem', fontWeight: 'bold', 
+            border: isFirst ? 'none' : '2px solid var(--border-light)', 
+            backdropFilter: 'blur(10px)',
+            boxShadow: isFirst ? '0 10px 30px rgba(79, 70, 229, 0.4)' : 'none',
+            transform: isFirst ? 'scale(1.02)' : 'none'
+         }}>
+            <div style={{ display: 'flex', gap: '2rem' }}>
+               <span style={{ opacity: 0.8, width: '60px' }}>#{activeRank+1}</span>
+               <span>{player.name}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+               {!showNewRanks && player.scoreGained > 0 && (
+                  <span style={{ fontSize: '1.5rem', color: '#4ade80', animation: 'slideUp 0.5s ease-out' }}>+{player.scoreGained}</span>
+               )}
+               <span style={{ minWidth: '90px', textAlign: 'right' }}>{displayScore}</span>
+               {isFirst && <i className="ti ti-flame anim-flame" style={{ color: '#fbbf24', display: 'inline-block' }}></i>}
+            </div>
+         </div>
+      </div>
+   );
+}
+
 export default function AdminProjectorView() {
   const params = useParams();
   const router = useRouter();
@@ -12,6 +75,39 @@ export default function AdminProjectorView() {
   // Track to only award payout once
   const [payoutIssued, setPayoutIssued] = useState(false);
   const audioRef = useRef(null);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const [timeLeft, setTimeLeft] = useState(20);
+  
+  useEffect(() => {
+    if (session?.status === 'active') {
+      setTimeLeft(20);
+      const interval = setInterval(() => {
+         setTimeLeft(prev => {
+            if (prev <= 1) {
+               clearInterval(interval);
+               return 0;
+            }
+            return prev - 1;
+         });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.status, session?.currentQuestionIndex]);
+
+  useEffect(() => {
+     if (session?.status === 'active' && timeLeft === 0) {
+        showLeaderboard();
+     }
+  }, [timeLeft, session?.status]);
 
   useEffect(() => {
     if(!pin) return;
@@ -49,6 +145,30 @@ export default function AdminProjectorView() {
     }
   }, [session]);
 
+  const showLeaderboard = async () => {
+    await updateSessionState(pin, { status: 'leaderboard' });
+  };
+
+  const answeredCount = Object.values(session?.participants || {}).filter(p => p.hasAnswered).length;
+  const totalParticipants = Object.keys(session?.participants || {}).length;
+
+  useEffect(() => {
+     if (session?.status === 'active' && totalParticipants > 0 && answeredCount === totalParticipants) {
+        showLeaderboard();
+     }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.status, answeredCount, totalParticipants]);
+
+  const [showNewRanks, setShowNewRanks] = useState(false);
+
+  useEffect(() => {
+     if (session?.status === 'leaderboard') {
+        setShowNewRanks(false);
+        const timer = setTimeout(() => setShowNewRanks(true), 3000); // 3s total before rank swaps
+        return () => clearTimeout(timer);
+     }
+  }, [session?.status]);
+
   if(!session) {
     return <div style={{ display: 'flex', height: '80vh', justifyContent: 'center', alignItems: 'center' }}><h2>Loading...</h2></div>;
   }
@@ -57,7 +177,13 @@ export default function AdminProjectorView() {
     if(audioRef.current && session.bgMusic && session.bgMusic !== 'none') {
        audioRef.current.play().catch(e => console.warn("Audio play issue:", e));
     }
-    await updateSessionState(pin, { status: 'active', currentQuestionIndex: 0 });
+    const updates = { status: 'active', currentQuestionIndex: 0 };
+    if (session.participants) {
+      Object.keys(session.participants).forEach(uid => {
+         updates[`participants/${uid}/hasAnswered`] = false;
+      });
+    }
+    await updateSessionState(pin, updates);
   };
 
   const handleNext = async () => {
@@ -69,15 +195,26 @@ export default function AdminProjectorView() {
       }
       await updateSessionState(pin, { status: 'finished' });
     } else {
-      await updateSessionState(pin, { status: 'active', currentQuestionIndex: nextIdx });
+      const updates = { status: 'active', currentQuestionIndex: nextIdx };
+      if (session.participants) {
+        Object.keys(session.participants).forEach(uid => {
+           updates[`participants/${uid}/hasAnswered`] = false;
+        });
+      }
+      await updateSessionState(pin, updates);
     }
   };
 
-  const showLeaderboard = async () => {
-    await updateSessionState(pin, { status: 'leaderboard' });
-  };
+
   
-  const participants = Object.values(session.participants || {}).sort((a,b) => b.score - a.score);
+  const participants = Object.entries(session.participants || {}).map(([id, p]) => ({ id, ...p })).sort((a,b) => b.score - a.score);
+
+  const sortedByLast = [...participants].sort((a,b) => (b.lastScore ?? b.score) - (a.lastScore ?? a.score));
+  const sortedByCurrent = participants;
+
+  const displayedPlayers = participants.filter(p => {
+      return sortedByLast.indexOf(p) < 6 || sortedByCurrent.indexOf(p) < 6;
+  });
 
   const getActiveBackgroundStyles = (theme) => {
      if(!theme) return { background: '#f8f9fa' };
@@ -98,6 +235,18 @@ export default function AdminProjectorView() {
      return { background: bg };
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   const musicPlaybackOptions = {
      none: '',
      lobby1: '/music/lobby1.mp3',
@@ -105,9 +254,32 @@ export default function AdminProjectorView() {
      lobby3: '/music/lobby3.mp3'
   };
 
+  const shapeIcons = [
+     <svg viewBox="0 0 32 32" fill="white" style={{ width: '40px', height: '40px' }}><polygon points="16,4 28,28 4,28"/></svg>, // Triangle
+     <svg viewBox="0 0 32 32" fill="white" style={{ width: '40px', height: '40px', transform: 'rotate(45deg)' }}><rect x="6" y="6" width="20" height="20"/></svg>, // Diamond
+     <svg viewBox="0 0 32 32" fill="white" style={{ width: '40px', height: '40px' }}><circle cx="16" cy="16" r="12"/></svg>, // Circle
+     <svg viewBox="0 0 32 32" fill="white" style={{ width: '40px', height: '40px' }}><rect x="6" y="6" width="20" height="20"/></svg> // Square
+  ];
+
+  const activeQuestion = session.status === 'active' ? session.questions[session.currentQuestionIndex] : null;
   return (
     <div style={{ minHeight: '100vh', padding: '2rem 5rem', textAlign: 'center', overflow: 'hidden', ...getActiveBackgroundStyles(session.bgTheme) }}>
       
+      {session.status !== 'active' && (
+         <button 
+           onClick={toggleFullscreen} 
+           style={{ 
+             position: 'absolute', top: '20px', right: '20px', zIndex: 100,
+             background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', 
+             padding: '10px', color: session.bgTheme && session.bgTheme !== 'default' && !session.bgTheme.startsWith('#') ? 'white' : '#333', 
+             cursor: 'pointer', backdropFilter: 'blur(5px)', transition: 'background 0.2s'
+           }}
+           title="Toggle Fullscreen"
+         >
+           <i className={`ti ${isFullscreen ? 'ti-arrows-minimize' : 'ti-maximize'}`} style={{ fontSize: '1.5rem' }}></i>
+         </button>
+      )}
+
       {session.bgMusic && session.bgMusic !== 'none' && (
          <audio 
            ref={audioRef}
@@ -122,11 +294,13 @@ export default function AdminProjectorView() {
          @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
          @keyframes slideUp { 0% { transform: translateY(100px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
          @keyframes glowing { 0% { box-shadow: 0 0 10px var(--primary); } 50% { box-shadow: 0 4px 30px var(--primary); } 100% { box-shadow: 0 0 10px var(--primary); } }
+         @keyframes bounceFlame { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.2); } }
          
          .anim-float { animation: float 4s ease-in-out infinite; }
-         .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-         .anim-slide-up { animation: slideUp 0.6s ease-out forwards; }
+         .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+         .anim-slide-up { animation: slideUp 0.6s ease-out both; }
          .anim-glow { animation: glowing 2s infinite; }
+         .anim-flame { animation: bounceFlame 1s infinite alternate; }
          
          .text-theme { color: ${session.bgTheme && session.bgTheme !== 'default' ? '#fff' : 'inherit'}; text-shadow: ${session.bgTheme && session.bgTheme !== 'default' ? '0 2px 4px rgba(0,0,0,0.5)' : 'none'} }
       `}} />
@@ -171,43 +345,87 @@ export default function AdminProjectorView() {
         </div>
       )}
 
-      {session.status === 'active' && (
-        <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', height: '85vh' }}>
+      {session.status === 'active' && activeQuestion && (
+        <div className="anim-pop" style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', ...getActiveBackgroundStyles(session.bgTheme) }}>
           
-          <div style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(15px)', padding: '2rem', borderRadius: '24px', marginBottom: '2rem', borderBottom: '6px solid var(--primary)', color: 'var(--text-main)' }}>
-             <div style={{ fontSize: '1.2rem', fontWeight: '900', color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '2px' }}>
-                Question {session.currentQuestionIndex + 1} of {session.questions.length}
+          {/* Top Bar Area */}
+          <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+             <div style={{ width: '120px' }}></div> {/* Spacer for symmetry */}
+             
+             {/* Question Box */}
+             <div style={{ background: 'white', padding: '15px 40px', borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', maxWidth: '60vw', zIndex: 10 }}>
+                <h2 style={{ color: 'black', fontSize: '2.5rem', fontWeight: '900', margin: 0, textAlign: 'center' }}>
+                  {activeQuestion.text}
+                </h2>
              </div>
-             <h2 className="heading-xl" style={{ fontSize: '3.5rem', lineHeight: '1.2' }}>
-               {session.questions[session.currentQuestionIndex].text}
-             </h2>
+             
+             {/* Skip button */}
+             <div style={{ width: '120px', display: 'flex', justifyContent: 'flex-end', zIndex: 10 }}>
+                <button onClick={showLeaderboard} style={{ background: 'white', border: 'none', borderRadius: '4px', padding: '12px 25px', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', color: '#333' }}>
+                   Skip
+                </button>
+             </div>
           </div>
           
-          {session.questions[session.currentQuestionIndex].mediaUrl && (
-             <div style={{ flex: 1, minHeight: '150px', background: `url(${session.questions[session.currentQuestionIndex].mediaUrl}) center/contain no-repeat`, marginBottom: '2rem', borderRadius: '16px' }}></div>
-          )}
+          {/* Middle Area */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', minHeight: 0 }}>
+             
+             {/* Timer */}
+             <div style={{ width: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '100px', height: '100px', background: '#3b2575', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '3.5rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+                   {timeLeft}
+                </div>
+             </div>
+             
+             {/* Media */}
+             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', height: '100%', padding: '20px' }}>
+                {activeQuestion.mediaUrl ? (
+                   <img src={activeQuestion.mediaUrl} alt="Media" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', background: 'white', padding: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }} />
+                ) : (
+                   <div style={{ width: '50vw', height: '40vh' }}></div> /* Placeholder if no media */
+                )}
+             </div>
 
-          <div style={{ 
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', 
-            marginTop: 'auto', marginBottom: '2rem' 
-          }}>
-             {session.questions[session.currentQuestionIndex].options.map((opt, i) => (
+             {/* Answers Count */}
+             <div style={{ width: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: '100px', height: '100px', background: '#3b2575', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '3.5rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
+                   {answeredCount}
+                </div>
+                <div style={{ color: 'white', fontSize: '1.4rem', fontWeight: 'bold', marginTop: '10px', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>Answers</div>
+             </div>
+          </div>
+          
+          {/* Options Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '10px 20px 45px 20px', height: '35vh' }}>
+             {activeQuestion.options.map((opt, i) => (
                 <div key={i} className="anim-pop" style={{ 
-                  background: ['#e11d48', '#2563eb', '#d97706', '#16a34a'][i],
-                  padding: session.questions[session.currentQuestionIndex].mediaUrl ? '1.5rem' : '2.5rem', 
-                  borderRadius: '16px', fontSize: session.questions[session.currentQuestionIndex].mediaUrl ? '1.8rem' : '2.3rem', fontWeight: 'bold', color: 'white',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  animationDelay: `${i * 0.1}s`
+                  background: ['#e21b3c', '#1368ce', '#d89e00', '#26890c'][i],
+                  borderRadius: '4px', display: 'flex', alignItems: 'center', padding: '0 30px',
+                  boxShadow: `0 6px 0 ${['#b3152f', '#0f52a3', '#ae8000', '#1f6e09'][i]}`,
+                  animationDelay: `${i * 0.1}s`,
+                  color: 'white', fontSize: '2.5rem', fontWeight: 'bold'
                 }}>
-                  {opt}
+                  <div style={{ flexShrink: 0, marginRight: '30px', transform: 'translateY(5px)' }}>
+                     {shapeIcons[i]}
+                  </div>
+                  <div style={{ wordBreak: 'break-word', textAlign: 'left', lineHeight: '1.2' }}>
+                     {opt}
+                  </div>
                 </div>
              ))}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-             <button className="btn-primary" onClick={showLeaderboard} style={{ fontSize: '1.2rem', padding: '15px 30px' }}>
-                Show Leaderboard
-             </button>
+          {/* Bottom Black Bar */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', color: 'white', fontSize: '1rem', zIndex: 10 }}>
+             <div style={{ fontWeight: 'bold' }}>{session.currentQuestionIndex + 1} / {session.questions.length}</div>
+             <div style={{ fontWeight: 'bold', flex: 1, textAlign: 'center' }}>
+                <i className="ti ti-lock"></i> ecquiz.com &nbsp;&nbsp;&nbsp; Game PIN: <span style={{ fontSize: '1.2rem' }}>{pin}</span>
+             </div>
+             <div style={{ display: 'flex', gap: '25px' }}>
+                <i className={`ti ${audioRef.current?.muted ? 'ti-volume-3' : 'ti-volume'}`} style={{ cursor: 'pointer', fontSize: '1.5rem' }} onClick={() => { if(audioRef.current) audioRef.current.muted = !audioRef.current.muted; }}></i>
+                <i className="ti ti-settings" style={{ cursor: 'pointer', fontSize: '1.5rem' }}></i>
+                <i className={`ti ${isFullscreen ? 'ti-arrows-minimize' : 'ti-maximize'}`} style={{ cursor: 'pointer', fontSize: '1.5rem' }} onClick={toggleFullscreen}></i>
+             </div>
           </div>
         </div>
       )}
@@ -215,26 +433,23 @@ export default function AdminProjectorView() {
       {session.status === 'leaderboard' && (
         <div className="anim-slide-up" style={{ marginTop: '2vh' }}>
           <h2 className="heading-xl text-theme" style={{ fontSize: '3.5rem' }}>Top Players</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '900px', margin: '3rem auto' }}>
-            {participants.slice(0, 5).map((p, i) => (
-              <div key={i} className="anim-pop" style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '1.5rem 3rem', background: i === 0 ? 'var(--gradient-primary)' : 'var(--bg-glass)', color: i === 0 ? 'white' : 'var(--text-main)',
-                borderRadius: '16px', fontSize: '2.2rem', fontWeight: 'bold', border: i === 0 ? 'none' : '2px solid var(--border-light)', backdropFilter: 'blur(10px)',
-                animationDelay: `${i * 0.1}s`, transform: i===0 ? 'scale(1.05)' : 'none'
-              }}>
-                <div style={{ display: 'flex', gap: '2rem' }}>
-                   <span style={{ opacity: 0.8 }}>#{i+1}</span>
-                   <span>{p.name}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                   <span>{p.score}</span>
-                   {i === 0 && <i className="ti ti-flame" style={{ color: '#fbbf24' }}></i>}
-                </div>
-              </div>
-            ))}
+          <div style={{ position: 'relative', height: '600px', maxWidth: '900px', margin: '3rem auto' }}>
+            {displayedPlayers.map((p) => {
+               const lastRank = sortedByLast.indexOf(p);
+               const currentRank = sortedByCurrent.indexOf(p);
+               const activeRank = showNewRanks ? currentRank : lastRank;
+
+               return (
+                  <AnimatedLeaderboardRow 
+                     key={p.id} 
+                     player={p} 
+                     activeRank={activeRank} 
+                     showNewRanks={showNewRanks}
+                  />
+               );
+            })}
           </div>
-          <button className="btn-primary anim-pop" onClick={handleNext} style={{ marginTop: '1rem', padding: '1.5rem 4rem', fontSize: '1.8rem', animationDelay: '0.8s' }}>
+          <button className="btn-primary anim-pop" onClick={handleNext} style={{ marginTop: '1rem', padding: '1.5rem 4rem', fontSize: '1.8rem', animationDelay: '4s' }}>
              {session.currentQuestionIndex >= session.questions.length - 1 ? 'End Game & Award Prizes' : 'Next Question'}
           </button>
         </div>
