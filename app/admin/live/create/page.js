@@ -27,7 +27,7 @@ export default function KahootQuizBuilder() {
   
   // Questions State
   const [questions, setQuestions] = useState([
-    { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, rewardPoints: 50, rewardExp: 10, mediaUrl: '' }
+    { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, rewardPoints: 50, rewardExp: 10, mediaUrl: '', isDoublePoints: false }
   ]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,7 +94,7 @@ export default function KahootQuizBuilder() {
 
   // Actions
   const handleAddQuestion = () => {
-    const newQ = { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, rewardPoints: 50, rewardExp: 10, mediaUrl: '' };
+    const newQ = { id: Date.now().toString(), text: '', options: ['', '', '', ''], correctIndex: 0, correctIndices: [0], questionType: 'single', timeLimit: 20, rewardPoints: 50, rewardExp: 10, mediaUrl: '', isDoublePoints: false };
     setQuestions([...questions, newQ]);
     setActiveIndex(questions.length);
   };
@@ -248,7 +248,7 @@ export default function KahootQuizBuilder() {
                          border: activeIndex === idx ? '2px solid #1368ce' : '2px solid transparent',
                          borderRadius: '8px', padding: '8px', cursor: 'pointer', position: 'relative'
                       }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666', marginBottom: '6px' }}>{idx + 1} Quiz</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>{idx + 1} Quiz {q.isDoublePoints && <span style={{ background: '#f59e0b', color: 'white', padding: '1px 5px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '900' }}>⚡2x</span>}</div>
                       <div style={{ background: q.mediaUrl ? `url(${q.mediaUrl}) center/cover no-repeat white` : 'white', height: '80px', borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#ccc', border: '1px solid #ddd' }}>
                          {q.text ? <div style={{ fontSize: '0.6rem', color: '#333', background: 'rgba(255,255,255,0.8)', padding: '4px', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>{q.text}</div> : (!q.mediaUrl && <i className="ti ti-photo"></i>)}
                       </div>
@@ -412,6 +412,29 @@ export default function KahootQuizBuilder() {
                       placeholder="e.g. 10"
                       style={{ width: '100%', padding: '10px', fontSize: '1rem', border: '1px solid #ccc', borderRadius: '4px', outline: 'none' }} 
                    />
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
+                      <i className="ti ti-bolt" style={{ color: '#f59e0b' }}></i> Double Points
+                   </label>
+                   <button 
+                      onClick={() => updateActiveQ('isDoublePoints', !activeQ.isDoublePoints)}
+                      style={{ 
+                         width: '100%', padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer',
+                         background: activeQ.isDoublePoints ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#f8fafc',
+                         color: activeQ.isDoublePoints ? 'white' : '#666',
+                         border: activeQ.isDoublePoints ? '2px solid #b45309' : '2px solid #e2e8f0',
+                         transition: 'all 0.2s',
+                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                      }}
+                   >
+                      <i className={`ti ${activeQ.isDoublePoints ? 'ti-bolt' : 'ti-bolt-off'}`}></i>
+                      {activeQ.isDoublePoints ? '⚡ DOUBLE POINTS ON' : 'Off'}
+                   </button>
+                   <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+                      {activeQ.isDoublePoints ? 'This question awards 2x points!' : 'Normal scoring for this question.'}
+                   </div>
                 </div>
              </div>
 

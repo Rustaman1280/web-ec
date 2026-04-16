@@ -204,10 +204,10 @@ export default function StudentDashboard() {
            <i className="ti ti-send" style={{ fontSize: '2.5rem', color: '#3b82f6' }}></i>
            <div style={{ fontWeight: 'bold' }}>Share Pts</div>
         </Link>
-        <button className="glass-panel" style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+        <Link href="/member/quiz-history" className="glass-panel" style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit' }}>
            <i className="ti ti-device-gamepad-2" style={{ fontSize: '2.5rem', color: 'var(--accent)' }}></i>
-           <div style={{ fontWeight: 'bold' }}>Mini Games</div>
-        </button>
+           <div style={{ fontWeight: 'bold' }}>Quiz History</div>
+        </Link>
         <button className="glass-panel" style={{ padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
            <i className="ti ti-medal" style={{ fontSize: '2.5rem', color: '#fbbf24' }}></i>
            <div style={{ fontWeight: 'bold' }}>Leaderboards</div>

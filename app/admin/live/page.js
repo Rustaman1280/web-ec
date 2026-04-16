@@ -34,7 +34,7 @@ export default function AdminLiveQuizzes() {
     setSessionLoading(true); 
     setError(null);
     try {
-      const pin = await createQuizSession(quiz.id, quiz.sessionPoints, quiz.sessionExp, quiz.questions, quiz.bgTheme, quiz.bgMusic);
+      const pin = await createQuizSession(quiz.id, quiz.sessionPoints, quiz.sessionExp, quiz.questions, quiz.bgTheme, quiz.bgMusic, quiz.title);
       if(pin) router.push(`/admin/quiz/${pin}`);
       else setError('Failed to create session. Check rules/connection.');
     } catch (err) {
@@ -53,9 +53,14 @@ export default function AdminLiveQuizzes() {
              Select a Custom Question Bank to instantly launch a live projector session.
            </p>
          </div>
-         <Link href="/admin/live/create" className="btn-primary" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-           <i className="ti ti-plus" style={{ fontSize: '1.2rem' }}></i> Create Custom Game
-         </Link>
+         <div style={{ display: 'flex', gap: '10px' }}>
+           <Link href="/admin/live/history" className="btn-primary" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', background: '#e2e8f0', color: 'var(--text-main)' }}>
+             <i className="ti ti-history" style={{ fontSize: '1.2rem' }}></i> Quiz History
+           </Link>
+           <Link href="/admin/live/create" className="btn-primary" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+             <i className="ti ti-plus" style={{ fontSize: '1.2rem' }}></i> Create Custom Game
+           </Link>
+         </div>
        </div>
 
        {error && <div style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}

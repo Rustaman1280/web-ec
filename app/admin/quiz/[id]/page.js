@@ -76,6 +76,7 @@ export default function AdminProjectorView() {
   // Track to only award payout once
   const [payoutIssued, setPayoutIssued] = useState(false);
   const audioRef = useRef(null);
+  const [showDPCutscene, setShowDPCutscene] = useState(false);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
@@ -222,13 +223,28 @@ export default function AdminProjectorView() {
     if(audioRef.current && session.bgMusic && session.bgMusic !== 'none') {
        audioRef.current.play().catch(e => console.warn("Audio play issue:", e));
     }
-    const updates = { status: 'active', currentQuestionIndex: 0 };
-    if (session.participants) {
-      Object.keys(session.participants).forEach(uid => {
-         updates[`participants/${uid}/hasAnswered`] = false;
-      });
+    // Check if first question is double points
+    if (session.questions[0]?.isDoublePoints) {
+       setShowDPCutscene(true);
+       setTimeout(async () => {
+          setShowDPCutscene(false);
+          const updates = { status: 'active', currentQuestionIndex: 0 };
+          if (session.participants) {
+            Object.keys(session.participants).forEach(uid => {
+               updates[`participants/${uid}/hasAnswered`] = false;
+            });
+          }
+          await updateSessionState(pin, updates);
+       }, 3500);
+    } else {
+       const updates = { status: 'active', currentQuestionIndex: 0 };
+       if (session.participants) {
+         Object.keys(session.participants).forEach(uid => {
+            updates[`participants/${uid}/hasAnswered`] = false;
+         });
+       }
+       await updateSessionState(pin, updates);
     }
-    await updateSessionState(pin, updates);
   };
 
   const handleNext = async () => {
@@ -240,13 +256,28 @@ export default function AdminProjectorView() {
       }
       await updateSessionState(pin, { status: 'finished' });
     } else {
-      const updates = { status: 'active', currentQuestionIndex: nextIdx };
-      if (session.participants) {
-        Object.keys(session.participants).forEach(uid => {
-           updates[`participants/${uid}/hasAnswered`] = false;
-        });
+      // Check if next question is double points
+      if (session.questions[nextIdx]?.isDoublePoints) {
+         setShowDPCutscene(true);
+         setTimeout(async () => {
+            setShowDPCutscene(false);
+            const updates = { status: 'active', currentQuestionIndex: nextIdx };
+            if (session.participants) {
+              Object.keys(session.participants).forEach(uid => {
+                 updates[`participants/${uid}/hasAnswered`] = false;
+              });
+            }
+            await updateSessionState(pin, updates);
+         }, 3500);
+      } else {
+         const updates = { status: 'active', currentQuestionIndex: nextIdx };
+         if (session.participants) {
+           Object.keys(session.participants).forEach(uid => {
+              updates[`participants/${uid}/hasAnswered`] = false;
+           });
+         }
+         await updateSessionState(pin, updates);
       }
-      await updateSessionState(pin, updates);
     }
   };
 
@@ -368,7 +399,69 @@ export default function AdminProjectorView() {
          .anim-title-shimmer { background: linear-gradient(90deg, #fbbf24, #fef08a, #fbbf24, #f59e0b); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: titleShimmer 3s linear infinite; }
          
          .text-theme { color: ${session.bgTheme && session.bgTheme !== 'default' ? '#fff' : 'inherit'}; text-shadow: ${session.bgTheme && session.bgTheme !== 'default' ? '0 2px 4px rgba(0,0,0,0.5)' : 'none'} }
-      `}} />
+       `}} />
+
+      {/* ⚡ DOUBLE POINTS CUTSCENE OVERLAY */}
+      {showDPCutscene && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+           {/* Lightning Bolts Background */}
+           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+              {[...Array(6)].map((_, i) => (
+                 <div key={`bolt-${i}`} style={{
+                    position: 'absolute',
+                    top: `${10 + (i * 15) % 70}%`,
+                    left: `${5 + (i * 18) % 90}%`,
+                    fontSize: `${3 + (i % 3) * 2}rem`,
+                    color: '#f59e0b',
+                    opacity: 0,
+                    animation: `dpBoltFlash 0.4s ease-out ${0.3 + i * 0.15}s both`,
+                    filter: 'drop-shadow(0 0 20px rgba(245,158,11,0.8))',
+                    transform: `rotate(${-15 + (i * 12)}deg)`
+                 }}>⚡</div>
+              ))}
+           </div>
+           {/* Expanding ring */}
+           <div style={{ position: 'absolute', width: '600px', height: '600px', borderRadius: '50%', border: '3px solid rgba(245,158,11,0.3)', animation: 'cutsceneRingPulse 1s ease-out infinite' }}></div>
+           <div style={{ position: 'absolute', width: '400px', height: '400px', borderRadius: '50%', border: '2px solid rgba(245,158,11,0.2)', animation: 'cutsceneRingPulse 1.5s ease-out infinite 0.4s' }}></div>
+           {/* Main Text */}
+           <div style={{ animation: 'dpTextReveal 1s cubic-bezier(0.16, 1, 0.3, 1) both', textAlign: 'center', zIndex: 10 }}>
+              <div style={{ fontSize: '8rem', marginBottom: '-10px', filter: 'drop-shadow(0 0 40px rgba(245,158,11,0.9))', animation: 'dpBoltPulse 0.5s ease-in-out infinite alternate' }}>⚡</div>
+              <h1 style={{ fontSize: '6rem', fontWeight: '900', letterSpacing: '10px', margin: '0',
+                 background: 'linear-gradient(90deg, #f59e0b, #fef08a, #f59e0b)', backgroundSize: '200% auto',
+                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                 animation: 'titleShimmer 1.5s linear infinite',
+                 filter: 'drop-shadow(0 4px 25px rgba(245,158,11,0.6))'
+              }}>DOUBLE</h1>
+              <h1 style={{ fontSize: '6rem', fontWeight: '900', letterSpacing: '10px', margin: '-10px 0 0 0',
+                 background: 'linear-gradient(90deg, #fbbf24, #fef9c3, #fbbf24)', backgroundSize: '200% auto',
+                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                 animation: 'titleShimmer 1.5s linear infinite 0.3s',
+                 filter: 'drop-shadow(0 4px 25px rgba(245,158,11,0.6))'
+              }}>POINTS</h1>
+              <p style={{ fontSize: '1.8rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '5px', marginTop: '15px', fontWeight: 'bold', animation: 'dpSubFade 1s ease-out 0.5s both' }}>2× REWARDS THIS ROUND</p>
+           </div>
+           {/* Particles */}
+           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+              {[...Array(20)].map((_, i) => (
+                 <div key={`dp-p-${i}`} style={{
+                    position: 'absolute',
+                    bottom: '-10px',
+                    left: `${i * 5}%`,
+                    width: `${3 + i % 4}px`, height: `${3 + i % 4}px`,
+                    borderRadius: '50%',
+                    background: i % 2 === 0 ? '#f59e0b' : '#fbbf24',
+                    animation: `particleFloat1 ${2 + i % 3}s ease-out ${i * 0.15}s both`
+                 }}></div>
+              ))}
+           </div>
+           <style dangerouslySetInnerHTML={{__html: `
+              @keyframes dpTextReveal { 0% { transform: scale(0.3) rotate(-5deg); opacity: 0; filter: blur(20px); } 50% { transform: scale(1.1) rotate(2deg); opacity: 1; filter: blur(0); } 100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); } }
+              @keyframes dpBoltFlash { 0% { opacity: 0; transform: scale(0.5) rotate(var(--r, 0deg)); } 50% { opacity: 1; } 100% { opacity: 0.3; transform: scale(1) rotate(var(--r, 0deg)); } }
+              @keyframes dpBoltPulse { 0% { transform: scale(1); } 100% { transform: scale(1.15); } }
+              @keyframes dpSubFade { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 0.5; transform: translateY(0); } }
+           `}} />
+        </div>
+      )}
 
       {session.status === 'waiting' && (
         <div style={{ marginTop: '5vh' }} className="anim-slide-up">
@@ -418,7 +511,12 @@ export default function AdminProjectorView() {
              <div style={{ width: '120px' }}></div> {/* Spacer for symmetry */}
              
              {/* Question Box */}
-             <div style={{ background: 'white', padding: '15px 40px', borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', maxWidth: '60vw', zIndex: 10 }}>
+             <div style={{ background: 'white', padding: '15px 40px', borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', maxWidth: '60vw', zIndex: 10, position: 'relative' }}>
+                {activeQuestion.isDoublePoints && (
+                    <div style={{ position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '4px 20px', borderRadius: '20px', fontSize: '1rem', fontWeight: '900', letterSpacing: '2px', boxShadow: '0 4px 15px rgba(245,158,11,0.5)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                       ⚡ DOUBLE POINTS ⚡
+                    </div>
+                 )}
                 <h2 style={{ color: 'black', fontSize: '2.5rem', fontWeight: '900', margin: 0, textAlign: 'center' }}>
                   {activeQuestion.text}
                 </h2>

@@ -240,12 +240,17 @@ export default function MemberActiveQuiz() {
       {/* Global Top Banner for active question / wait */}
       {session.status === 'active' && (
          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-            <div style={{ width: '40px', height: '40px', background: '#eee', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: '#333', fontSize: '1.2rem', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
-              {session.currentQuestionIndex + 1}
-            </div>
-            <div style={{ background: '#eee', borderRadius: '20px', padding: '5px 15px', color: '#333', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
-              <i className="ti ti-device-gamepad-2" style={{ color: '#e21b3c' }}></i> Quiz
-            </div>
+             <div style={{ width: '40px', height: '40px', background: '#eee', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: '#333', fontSize: '1.2rem', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
+               {session.currentQuestionIndex + 1}
+             </div>
+             {activeQ?.isDoublePoints && (
+                <div style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '6px 16px', borderRadius: '20px', fontWeight: '900', fontSize: '0.9rem', letterSpacing: '1px', boxShadow: '0 4px 15px rgba(245,158,11,0.5)', display: 'flex', alignItems: 'center', gap: '5px', animation: 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
+                   ⚡ 2x POINTS
+                </div>
+             )}
+             <div style={{ background: '#eee', borderRadius: '20px', padding: '5px 15px', color: '#333', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
+               <i className="ti ti-device-gamepad-2" style={{ color: '#e21b3c' }}></i> Quiz
+             </div>
          </div>
       )}
 
