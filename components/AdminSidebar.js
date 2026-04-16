@@ -11,6 +11,7 @@ export default function AdminSidebar() {
   const menu = [
     { name: 'Dashboard', path: '/admin', icon: 'ti-dashboard' },
     { name: 'Live Quizzes', path: '/admin/live', icon: 'ti-device-tv' },
+    { name: 'Speechy Games', path: '/admin/speechy', icon: 'ti-microphone' },
     { name: 'Task Manager', path: '/admin/tasks', icon: 'ti-clipboard-list' },
     { name: 'Student Management', path: '/admin/students', icon: 'ti-users' },
     { name: 'Attendance', path: '/admin/attendance', icon: 'ti-calendar-check' },

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { database } from '@/lib/firebase';
+import { ref, get } from 'firebase/database';
 
 export default function JoinQuiz() {
   const router = useRouter();
@@ -32,10 +34,23 @@ export default function JoinQuiz() {
     const cleanPin = pin.trim().toUpperCase();
     setLoading(true);
     
-    // Redirect logic to the interactive quiz page.
-    setTimeout(() => {
-      router.push(`/member/quiz/${cleanPin}`);
-    }, 800);
+    try {
+      const snap = await get(ref(database, `sessions/${cleanPin}`));
+      if(snap.exists()) {
+         const type = snap.val().type;
+         if (type === 'speechy') {
+            router.push(`/member/speechy/${cleanPin}`);
+         } else {
+            router.push(`/member/quiz/${cleanPin}`);
+         }
+      } else {
+         setError('PIN not found');
+         setLoading(false);
+      }
+    } catch(err) {
+      setError('Connection error');
+      setLoading(false);
+    }
   };
 
   return (

@@ -5,7 +5,7 @@ import AdminSidebar from '@/components/AdminSidebar';
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
-  const isQuizProjector = pathname?.includes('/quiz/');
+  const isQuizProjector = pathname?.includes('/quiz/') || (pathname?.includes('/speechy/') && pathname !== '/admin/speechy' && !pathname?.includes('/create'));
 
   return (
     <AdminGuard>
