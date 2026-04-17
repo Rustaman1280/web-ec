@@ -5,7 +5,7 @@ import MemberTopbar from '@/components/MemberTopbar';
 
 export default function MemberLayout({ children }) {
   const pathname = usePathname();
-  const isQuizPlaying = pathname?.includes('/quiz/');
+  const isQuizPlaying = pathname?.includes('/quiz/') || pathname?.includes('/speechy/play');
 
   if (isQuizPlaying) {
     return (

@@ -17,6 +17,7 @@ export default function MemberSpeechyGame() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [accuracy, setAccuracy] = useState(0);
+  const [matchedCount, setMatchedCount] = useState(0);
   const [hasFinished, setHasFinished] = useState(false);
   const [speechApiSupported, setSpeechApiSupported] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,14 +77,31 @@ export default function MemberSpeechyGame() {
   useEffect(() => {
      if (bank?.targetText) {
          const targetWords = bank.targetText.toLowerCase().replace(/[^\w\s\']|_/g, "").split(/\s+/).filter(w => w);
-         const spokenWords = transcript.toLowerCase().replace(/[^\w\s\']|_/g, "").split(/\s+/).filter(w => w);
+         const spokenTokens = transcript.toLowerCase().replace(/[^\w\s\']|_/g, "").split(/\s+/).filter(w => w);
          
-         let matches = 0;
-         targetWords.forEach(tw => {
-            if (spokenWords.includes(tw)) matches++;
-         });
+         let currentMatchCount = 0;
+         let spokenIndex = 0;
          
-         const newAccuracy = Math.min(100, Math.round((matches / targetWords.length) * 100));
+         for (let i = 0; i < targetWords.length; i++) {
+             let found = false;
+             while (spokenIndex < spokenTokens.length) {
+                 if (spokenTokens[spokenIndex] === targetWords[i]) {
+                     found = true;
+                     spokenIndex++;
+                     break;
+                 }
+                 spokenIndex++;
+             }
+             if (found) {
+                 currentMatchCount++;
+             } else {
+                 break; // Stop matching further if current required word isn't found
+             }
+         }
+         
+         setMatchedCount(currentMatchCount);
+         
+         const newAccuracy = Math.min(100, Math.round((currentMatchCount / targetWords.length) * 100));
          setAccuracy(newAccuracy || 0);
          
          // Auto-finish if 100%
@@ -102,6 +120,7 @@ export default function MemberSpeechyGame() {
         if (startTimeRef.current === 0) startTimeRef.current = Date.now();
         setTranscript(''); 
         setAccuracy(0);
+        setMatchedCount(0);
         try {
            recognitionRef.current.start();
            setIsRecording(true);
@@ -149,18 +168,20 @@ export default function MemberSpeechyGame() {
   // Render text with highlight matching
   const renderTargetText = () => {
      const tText = bank.targetText || '';
-     const spokenWords = transcript.toLowerCase().replace(/[^\w\s\']|_/g, "").split(/\s+/).filter(w => w);
+     let wordIndex = 0;
      
      return tText.split(/(\s+)/).map((wordChunk, idx) => {
         if (!wordChunk.trim()) return <span key={idx}>{wordChunk}</span>;
         
-        const cleanWord = wordChunk.toLowerCase().replace(/[^\w\s\']|_/g, "");
-        const isMatched = spokenWords.includes(cleanWord);
+        const isMatched = wordIndex < matchedCount;
+        const isCurrent = wordIndex === matchedCount;
+        wordIndex++;
         
         return (
            <span key={idx} style={{ 
-              color: isMatched ? '#10b981' : 'inherit',
-              transition: 'color 0.3s'
+              color: isMatched ? '#10b981' : (isCurrent ? '#fbbf24' : 'inherit'),
+              textDecoration: isCurrent ? 'underline' : 'none',
+              transition: 'all 0.3s'
            }}>
               {wordChunk}
            </span>
@@ -254,6 +275,7 @@ export default function MemberSpeechyGame() {
                    setHasFinished(false);
                    setTranscript('');
                    setAccuracy(0);
+                   setMatchedCount(0);
                 }} style={{ width: '100%', background: bank.color || '#3b82f6', color: 'white', padding: '15px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>
                    Try Again
                 </button>
