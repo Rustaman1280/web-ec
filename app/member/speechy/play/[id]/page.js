@@ -118,9 +118,6 @@ export default function MemberSpeechyGame() {
         setIsRecording(false);
      } else {
         if (startTimeRef.current === 0) startTimeRef.current = Date.now();
-        setTranscript(''); 
-        setAccuracy(0);
-        setMatchedCount(0);
         try {
            recognitionRef.current.start();
            setIsRecording(true);
@@ -232,25 +229,7 @@ export default function MemberSpeechyGame() {
                       <i className={`ti ${isRecording ? 'ti-player-stop' : 'ti-player-record'}`} style={{ marginRight: '10px' }}></i>
                       {isRecording ? 'Listening... Tap to Stop' : 'Tap to Start Speaking'}
                    </button>
-
-                   {(transcript || accuracy > 0) && (
-                      <button 
-                         onClick={finishSpeaking} 
-                         disabled={isSubmitting}
-                         style={{ 
-                            background: '#10b981', color: 'white', padding: '15px', borderRadius: '12px', fontSize: '1.2rem', fontWeight: 'bold', 
-                            border: 'none', cursor: isSubmitting ? 'wait' : 'pointer'
-                         }}>
-                         {isSubmitting ? 'Evaluating...' : `Submit Result (${accuracy}%)`}
-                      </button>
-                   )}
                 </div>
-
-                {transcript && (
-                   <div style={{ padding: '15px', background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', fontSize: '1rem', color: '#94a3b8', fontStyle: 'italic', maxHeight: '100px', overflowY: 'auto' }}>
-                      "{transcript}"
-                   </div>
-                )}
              </div>
           )}
 
