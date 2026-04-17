@@ -154,9 +154,9 @@ export default function MemberSpeechyGame() {
       }
 
       if (result.isFirstTime) {
-         setRewardMsg(`+${bank.sessionPoints} Coins & +${bank.sessionExp} EXP`);
+         setRewardMsg(`Poin dan EXP masuk! (+${bank.sessionPoints} Coins & +${bank.sessionExp} EXP)`);
       } else {
-         setRewardMsg('Score updated! (Rewards only granted once)');
+         setRewardMsg('Skor diperbarui! (Hadiah hanya diberikan sekali)');
       }
   };
 
@@ -236,7 +236,7 @@ export default function MemberSpeechyGame() {
           {hasFinished && (
              <div style={{ textAlign: 'center', width: '100%', maxWidth: '400px' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>{accuracy >= 80 ? '🏆' : '👍'}</div>
-                <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', marginBottom: '1rem' }}>Great Effort!</h2>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', marginBottom: '1rem' }}>Selesai!</h2>
                 
                 <div style={{ background: 'rgba(255,255,255,0.1)', padding: '20px', borderRadius: '16px', marginBottom: '20px' }}>
                    <div style={{ fontSize: '1rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Accuracy</div>
